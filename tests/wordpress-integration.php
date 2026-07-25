@@ -9,6 +9,7 @@ use SMC\OrganizationProfile\Data\OrganizationRepository;
 use SMC\OrganizationProfile\Http\RestController;
 use SMC\OrganizationProfile\Schema\OrganizationGraph;
 use SMC\OrganizationProfile\Schema\OrganizationSchema;
+use SMC\OrganizationProfile\Schema\SchemaInjector;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -25,7 +26,7 @@ $expect = static function ( bool $condition, string $message ) use ( &$checks, &
     echo "FAIL {$message}\n";
 };
 
-$expect( defined( 'SMC_VERSION' ) && '1.0.0' === SMC_VERSION, 'SMC 1.0.0 is active' );
+$expect( defined( 'SMC_VERSION' ) && '1.0.1' === SMC_VERSION, 'SMC 1.0.1 is active' );
 $expect( class_exists( SharedContentTypes::class ), 'HWS shared content registry is active' );
 $expect( version_compare( PluginMetadata::VERSION, '10.18.143', '>=' ), 'HWS ownership release is active' );
 $expect( post_type_exists( 'organization' ), 'Organization CPT exists' );
@@ -70,6 +71,7 @@ foreach (
 
 $primary_id = OrganizationRepository::primary_id();
 $expect( $primary_id > 0, 'a published primary organization is available' );
+$expect( null === SchemaInjector::current_context(), 'unmanaged requests do not fall back to the primary organization' );
 
 if ( $primary_id > 0 ) {
     $schema = OrganizationSchema::build( $primary_id, true );

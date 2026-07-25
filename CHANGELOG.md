@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.1
+
+- Prevented unmanaged pages from falling back to the primary organization during schema context resolution.
+- Added static and live WordPress regressions for disabled homepage and unmanaged-page injection.
+
 ## 1.0.0
 
 - Created the separate SMC Organization Profile Integration plugin.

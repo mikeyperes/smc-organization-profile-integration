@@ -38,7 +38,7 @@ $admin = $read( $root . '/src/Admin/AdminPage.php' );
 
 preg_match( '/^ \* Version:\s*([^\s]+)/m', $initialization, $header_match );
 preg_match( "/define\( 'SMC_VERSION', '([^']+)' \)/", $initialization, $constant_match );
-$expect( '1.0.0' === ( $header_match[1] ?? '' ), 'plugin header version is 1.0.0' );
+$expect( '1.0.1' === ( $header_match[1] ?? '' ), 'plugin header version is 1.0.1' );
 $expect( ( $header_match[1] ?? '' ) === ( $constant_match[1] ?? '' ), 'plugin header and runtime versions match' );
 $expect( str_contains( $initialization, 'Plugin Name: SMC Organization Profile Integration' ), 'approved plugin name is used' );
 $expect( str_contains( $initialization, 'Text Domain: smc-organization-profile-integration' ), 'approved plugin slug is used' );
@@ -144,6 +144,7 @@ $expect(
     && str_contains( $injector, 'JSON_HEX_TAG' ),
     'frontend injection and Rank Math coexistence are guarded'
 );
+$expect( str_contains( $injector, 'if ( $organization_id <= 0 )' ), 'unmanaged frontend requests cannot fall back to the primary organization' );
 foreach ( [ '/organizations', '/organizations/primary', '/organizations/(?P<id>\\d+)', '/organizations/(?P<id>\\d+)/schema' ] as $route ) {
     $expect( str_contains( $rest, $route ), "REST route exists: {$route}" );
 }

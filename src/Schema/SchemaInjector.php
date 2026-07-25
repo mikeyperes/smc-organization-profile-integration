@@ -88,6 +88,10 @@ final class SchemaInjector {
             $organization_id = OrganizationRepository::primary_id();
         }
 
+        if ( $organization_id <= 0 ) {
+            return null;
+        }
+
         $organization = OrganizationRepository::data( $organization_id );
         if ( ! $organization || ! $organization->schema_enabled() ) {
             return null;
