@@ -1,0 +1,20 @@
+{
+    "name": "mikeyperes/smc-organization-profile-integration",
+    "description": "Organization profiles, schema, REST output, and presentation for HWS-managed company websites.",
+    "type": "wordpress-plugin",
+    "license": "GPL-2.0-or-later",
+    "require": {
+        "php": ">=8.1"
+    },
+    "autoload": {
+        "psr-4": {
+            "SMC\\OrganizationProfile\\": "src/"
+        }
+    },
+    "scripts": {
+        "test": [
+            "@php tests/run.php",
+            "@php tests/schema-unit.php"
+        ]
+    }
+}
