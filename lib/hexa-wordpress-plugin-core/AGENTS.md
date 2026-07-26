@@ -33,13 +33,17 @@ Each sub-namespace must have a matching folder:
 ```text
 src/ActivityLog/        Hexa\PluginCore\ActivityLog
 src/AcfFieldFactory/    Hexa\PluginCore\AcfFieldFactory
+src/BrandColors/        Hexa\PluginCore\BrandColors
+src/BrandProfiles/      Hexa\PluginCore\BrandProfiles
 src/CoreBootstrap/      Hexa\PluginCore\CoreBootstrap
 src/CoreContracts/      Hexa\PluginCore\CoreContracts
 src/CorePackageUpdates/ Hexa\PluginCore\CorePackageUpdates
 src/CoreRuntime/        Hexa\PluginCore\CoreRuntime
 src/CredentialVault/    Hexa\PluginCore\CredentialVault
 src/DatabaseCleanup/    Hexa\PluginCore\DatabaseCleanup
+src/FrontendForms/      Hexa\PluginCore\FrontendForms
 src/LogFiles/           Hexa\PluginCore\LogFiles
+src/MediaUploads/       Hexa\PluginCore\MediaUploads
 src/ObjectCache/        Hexa\PluginCore\ObjectCache
 src/PluginProvisioning/ Hexa\PluginCore\PluginProvisioning
 src/PluginUpdates/      Hexa\PluginCore\PluginUpdates
@@ -80,6 +84,9 @@ Never make a module boot itself at file include time. Modules register hooks fro
 - Put reusable object-cache provider status and activation adapters in `src/ObjectCache`.
 - Put admin tab abstractions in `src/WpAdminTabs`.
 - Put reusable visual primitives in `src/WpAdminComponents`.
+- Put normalized public brand identities in `src/BrandProfiles`; product and service data remains host-owned.
+- Put canonical public field schemas and rich-text normalization in `src/FrontendForms`.
+- Put reusable image validation and Media Library adapters in `src/MediaUploads`; hosts retain nonce, capability, ownership, and retention rules.
 - Put reusable error-log viewer/read/classification features in `src/LogFiles`.
 - Put reusable plugin discovery, install, activation, GitHub ZIP provisioning, and folder-normalization helpers in `src/PluginProvisioning`.
 - Put reusable snippet definitions, option toggles, test rules, related snippets, related shortcodes, basic README rendering, and AJAX handlers in `src/SnippetRegistry`.

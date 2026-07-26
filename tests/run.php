@@ -35,10 +35,14 @@ $shortcode = $read( $root . '/src/Shortcodes/OrganizationShortcode.php' );
 $registrar = $read( $root . '/src/Shortcodes/ShortcodeRegistrar.php' );
 $migrator = $read( $root . '/src/Migration/LegacyFieldMigrator.php' );
 $admin = $read( $root . '/src/Admin/AdminPage.php' );
+$field_reader = $read( $root . '/src/Data/FieldReader.php' );
+$media_normalizer = $read( $root . '/src/Data/MediaNormalizer.php' );
+$repository = $read( $root . '/src/Data/OrganizationRepository.php' );
+$gallery_renderer = $read( $root . '/src/Shortcodes/GalleryRenderer.php' );
 
 preg_match( '/^ \* Version:\s*([^\s]+)/m', $initialization, $header_match );
 preg_match( "/define\( 'SMC_VERSION', '([^']+)' \)/", $initialization, $constant_match );
-$expect( '1.0.1' === ( $header_match[1] ?? '' ), 'plugin header version is 1.0.1' );
+$expect( '1.0.2' === ( $header_match[1] ?? '' ), 'plugin header version is 1.0.2' );
 $expect( ( $header_match[1] ?? '' ) === ( $constant_match[1] ?? '' ), 'plugin header and runtime versions match' );
 $expect( str_contains( $initialization, 'Plugin Name: SMC Organization Profile Integration' ), 'approved plugin name is used' );
 $expect( str_contains( $initialization, 'Text Domain: smc-organization-profile-integration' ), 'approved plugin slug is used' );
@@ -155,7 +159,46 @@ foreach ( [ 'smc_organization', 'smc_organization_gallery', 'smc_organization_sc
 $expect( str_contains( $shortcode, 'PUBLIC_FIELDS' ), 'field shortcode uses a public allowlist' );
 $expect( str_contains( $migrator, 'copy_if_empty' ) && str_contains( $migrator, '_smc_migration_version' ), 'legacy migration is idempotent and non-overwriting' );
 $expect( str_contains( $admin, "check_admin_referer( 'smc_save_settings' )" ), 'admin settings require a nonce' );
-$expect( '0.19.66' === trim( $read( $root . '/lib/hexa-wordpress-plugin-core/VERSION' ) ), 'plugin bundles Hexa Core 0.19.66' );
+$expect(
+    str_contains( $admin, 'HostTabsRenderer' )
+    && 1 === preg_match( "/'layout'\\s*=>\\s*'sidebar'/", $admin )
+    && str_contains( $admin, "'groups'" )
+    && str_contains( $admin, 'sidebar_identity' )
+    && ! str_contains( $admin, 'nav-tab-wrapper' ),
+    'admin uses the current grouped Hexa Core sidebar'
+);
+$expect(
+    str_contains( $admin, 'AjaxActionRegistry' )
+    && str_contains( $admin, "wp_add_inline_style( 'common'" )
+    && ! str_contains( $admin, 'wp_enqueue_style(' ),
+    'admin tabs load lazily without a blocking plugin stylesheet request'
+);
+$expect(
+    str_contains( $admin, "'no_found_rows'  => true" )
+    && str_contains( $admin, "'update_post_meta_cache' => false" )
+    && str_contains( $admin, "'update_post_term_cache' => false" ),
+    'admin selector queries disable unnecessary caches and row counts'
+);
+$expect(
+    str_contains( $field_reader, 'private array $cache' )
+    && str_contains( $media_normalizer, 'private static array $image_cache' )
+    && str_contains( $repository, 'private static array $data' )
+    && str_contains( $schema, 'private static array $bundle_cache' ),
+    'normalized fields, media, repositories, and schema use request caches'
+);
+$expect(
+    ! str_contains( $dependencies, "add_action( 'init', [ self::class, 'ensure_registered' ]" )
+    && 1 === substr_count( $plugin, 'Settings::install_defaults();' )
+    && str_contains( $plugin, "add_action( 'updated_post_meta'" )
+    && str_contains( $plugin, 'clear_request_caches' ),
+    'runtime avoids repeated setup and invalidates request caches after writes'
+);
+$expect(
+    str_contains( $gallery_renderer, "wp_register_style( 'smc-organization-profile', false" )
+    && str_contains( $gallery_renderer, 'wp_add_inline_style' ),
+    'frontend gallery avoids a blocking plugin stylesheet request'
+);
+$expect( '0.19.77' === trim( $read( $root . '/lib/hexa-wordpress-plugin-core/VERSION' ) ), 'plugin bundles Hexa Core 0.19.77' );
 $expect( is_file( $root . '/docs/architecture.md' ) && is_file( $root . '/docs/schema-contract.md' ), 'architecture and schema contracts are documented' );
 
 $root_php = array_map( 'basename', glob( $root . '/*.php' ) ?: [] );

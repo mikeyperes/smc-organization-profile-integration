@@ -29,7 +29,12 @@ SFPF Person retains Book ownership and may delegate its former organization help
 2. `Normalizer` and `MediaNormalizer` produce typed values and attachment records.
 3. `OrganizationData` exposes one compatibility-aware entity contract.
 4. Schema, REST, shortcodes, migration, and admin previews consume that contract.
-5. No generated schema payload is stored or edited.
+5. Repeated field, media, entity, and schema reads are cached only for the current request.
+6. No generated schema payload is stored or edited.
+
+## Admin Surface
+
+SMC supplies its tab catalog and panels to the shared Hexa Core grouped sidebar. Panels are loaded through a capability- and nonce-guarded AJAX endpoint, and dashboard styling is attached to WordPress's existing admin stylesheet instead of requiring a separate plugin asset request.
 
 ## Extension Points
 

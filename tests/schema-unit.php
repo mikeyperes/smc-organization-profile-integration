@@ -142,6 +142,8 @@ $article = array_values(
 $expect( [ '@id' => 'https://company.test/#organization' ] === ( $article['about'] ?? [] ), 'press Article points back to the Organization' );
 
 $GLOBALS['smc_test_meta'][10]['schema_enabled'] = 0;
+OrganizationRepository::clear_cache( 10 );
+OrganizationSchema::clear_cache( 10 );
 $expect( [] === OrganizationSchema::build( 10, false ), 'an explicit per-organization schema toggle disables output' );
 $rank_math = [
     'graph' => [
@@ -157,6 +159,8 @@ $expect(
     'Rank Math output remains untouched when the organization opts out'
 );
 $GLOBALS['smc_test_meta'][10]['schema_enabled'] = 1;
+OrganizationRepository::clear_cache( 10 );
+OrganizationSchema::clear_cache( 10 );
 
 $filtered_rank_math = SchemaInjector::filter_rank_math( $rank_math );
 $filtered_nodes = $filtered_rank_math['graph']['@graph'] ?? [];

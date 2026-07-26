@@ -7,6 +7,13 @@ namespace SMC\OrganizationProfile\Data;
 defined( 'ABSPATH' ) || exit;
 
 final class MediaNormalizer {
+    /** @var array<string,array<string,mixed>> */
+    private static array $image_cache = [];
+
+    public static function clear_cache(): void {
+        self::$image_cache = [];
+    }
+
     public static function attachment_id( mixed $value ): int {
         if ( is_object( $value ) && isset( $value->ID ) ) {
             return absint( $value->ID );
@@ -31,6 +38,11 @@ final class MediaNormalizer {
     /** @return array<string,mixed> */
     public static function image( mixed $value, string $size = 'full' ): array {
         $id = self::attachment_id( $value );
+        $cache_key = $id > 0 ? $id . ':' . $size : '';
+        if ( '' !== $cache_key && array_key_exists( $cache_key, self::$image_cache ) ) {
+            return self::$image_cache[ $cache_key ];
+        }
+
         $fallback_url = is_array( $value ) ? Normalizer::url( $value['url'] ?? '' ) : Normalizer::url( $value );
         $source = $id > 0 && function_exists( 'wp_get_attachment_image_src' )
             ? wp_get_attachment_image_src( $id, $size )
@@ -41,6 +53,9 @@ final class MediaNormalizer {
 
         $url = is_array( $source ) ? Normalizer::url( $source[0] ?? '' ) : $fallback_url;
         if ( '' === $url ) {
+            if ( '' !== $cache_key ) {
+                self::$image_cache[ $cache_key ] = [];
+            }
             return [];
         }
 
@@ -50,7 +65,7 @@ final class MediaNormalizer {
             ? Normalizer::text( wp_get_attachment_caption( $id ) )
             : '';
 
-        return array_filter(
+        $image = array_filter(
             [
                 'id'       => $id,
                 'url'      => $url,
@@ -63,6 +78,12 @@ final class MediaNormalizer {
             ],
             static fn ( mixed $item ): bool => Normalizer::present( $item )
         );
+
+        if ( '' !== $cache_key ) {
+            self::$image_cache[ $cache_key ] = $image;
+        }
+
+        return $image;
     }
 
     /** @return list<array<string,mixed>> */

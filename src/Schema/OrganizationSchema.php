@@ -25,6 +25,18 @@ final class OrganizationSchema {
         'SportsOrganization',
     ];
 
+    /** @var array<int,array{organization:array<string,mixed>,nodes:list<array<string,mixed>>}> */
+    private static array $bundle_cache = [];
+
+    public static function clear_cache( int $post_id = 0 ): void {
+        if ( $post_id > 0 ) {
+            unset( self::$bundle_cache[ $post_id ] );
+            return;
+        }
+
+        self::$bundle_cache = [];
+    }
+
     /**
      * Compatibility entry point used by SFPF Person.
      *
@@ -45,9 +57,14 @@ final class OrganizationSchema {
      * @return array{organization:array<string,mixed>,nodes:list<array<string,mixed>>}
      */
     public static function bundle( int $post_id ): array {
+        if ( array_key_exists( $post_id, self::$bundle_cache ) ) {
+            return self::$bundle_cache[ $post_id ];
+        }
+
         $data = OrganizationRepository::data( $post_id );
         if ( ! $data || ! $data->schema_enabled() ) {
-            return [ 'organization' => [], 'nodes' => [] ];
+            self::$bundle_cache[ $post_id ] = [ 'organization' => [], 'nodes' => [] ];
+            return self::$bundle_cache[ $post_id ];
         }
 
         $organization_id = SchemaIds::organization( $post_id );
@@ -73,10 +90,12 @@ final class OrganizationSchema {
 
         $organization = self::organization_node( $data, $organization_id, $references );
 
-        return [
+        self::$bundle_cache[ $post_id ] = [
             'organization' => $organization,
             'nodes'        => array_values( $nodes ),
         ];
+
+        return self::$bundle_cache[ $post_id ];
     }
 
     /**

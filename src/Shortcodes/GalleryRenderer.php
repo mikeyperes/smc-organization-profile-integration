@@ -16,12 +16,7 @@ final class GalleryRenderer {
             return '';
         }
 
-        wp_enqueue_style(
-            'smc-organization-profile',
-            SMC_PLUGIN_URL . 'assets/frontend.css',
-            [],
-            SMC_VERSION
-        );
+        self::enqueue_assets();
 
         $columns = max( 1, min( 6, $columns ) );
         $html = sprintf(
@@ -56,5 +51,22 @@ final class GalleryRenderer {
         }
 
         return $html . '</div>';
+    }
+
+    private static function enqueue_assets(): void {
+        static $enqueued = false;
+
+        if ( $enqueued ) {
+            return;
+        }
+
+        $enqueued = true;
+        wp_register_style( 'smc-organization-profile', false, [], SMC_VERSION );
+        wp_enqueue_style( 'smc-organization-profile' );
+
+        $path = SMC_PLUGIN_DIR . 'assets/frontend.css';
+        if ( is_readable( $path ) ) {
+            wp_add_inline_style( 'smc-organization-profile', (string) file_get_contents( $path ) );
+        }
     }
 }

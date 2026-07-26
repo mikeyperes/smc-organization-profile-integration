@@ -7,6 +7,9 @@ namespace SMC\OrganizationProfile\Data;
 defined( 'ABSPATH' ) || exit;
 
 final class FieldReader {
+    /** @var array<string,mixed> */
+    private array $cache = [];
+
     public function __construct( private readonly int $post_id ) {
     }
 
@@ -26,13 +29,19 @@ final class FieldReader {
     }
 
     public function read( string $name ): mixed {
+        if ( array_key_exists( $name, $this->cache ) ) {
+            return $this->cache[ $name ];
+        }
+
         if ( function_exists( 'get_field' ) ) {
             $value = get_field( $name, $this->post_id );
             if ( Normalizer::present( $value ) ) {
-                return $value;
+                $this->cache[ $name ] = $value;
+                return $this->cache[ $name ];
             }
         }
 
-        return get_post_meta( $this->post_id, $name, true );
+        $this->cache[ $name ] = get_post_meta( $this->post_id, $name, true );
+        return $this->cache[ $name ];
     }
 }

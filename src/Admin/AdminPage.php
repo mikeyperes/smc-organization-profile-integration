@@ -4,6 +4,11 @@ declare( strict_types=1 );
 
 namespace SMC\OrganizationProfile\Admin;
 
+use Hexa\PluginCore\CoreRuntime\CoreVersion;
+use Hexa\PluginCore\WpAdminAjax\AjaxActionRegistry;
+use Hexa\PluginCore\WpAdminAjax\AjaxFailure;
+use Hexa\PluginCore\WpAdminAjax\AjaxRequest;
+use Hexa\PluginCore\WpAdminTabs\HostTabsRenderer;
 use SMC\OrganizationProfile\Acf\OrganizationFields;
 use SMC\OrganizationProfile\Data\OrganizationRepository;
 use SMC\OrganizationProfile\Dependencies\HwsContentTypes;
@@ -19,11 +24,44 @@ defined( 'ABSPATH' ) || exit;
 final class AdminPage {
     public const SLUG = 'smc-organization-profile';
 
+    private const AJAX_ACTION = 'smc_load_dashboard_tab';
+    private const NONCE_ACTION = 'smc_dashboard_tabs';
+
+    private const TABS = [
+        'overview'   => 'Overview',
+        'settings'   => 'Settings',
+        'fields'     => 'Field Model',
+        'shortcodes' => 'Shortcodes',
+        'schema'     => 'Live Schema',
+    ];
+
+    private const GROUPS = [
+        [ 'label' => 'Overview', 'tabs' => [ 'overview' ] ],
+        [ 'label' => 'Organization', 'tabs' => [ 'settings', 'fields', 'shortcodes', 'schema' ] ],
+        [ 'label' => 'System', 'tabs' => [ 'hexa-core' ] ],
+    ];
+
     public static function register(): void {
         add_action( 'admin_menu', [ self::class, 'add_menu' ] );
         add_action( 'admin_enqueue_scripts', [ self::class, 'enqueue_assets' ] );
         add_action( 'admin_post_smc_save_settings', [ self::class, 'save_settings' ] );
         add_filter( 'plugin_action_links_' . SMC_PLUGIN_BASENAME, [ self::class, 'action_links' ] );
+
+        if ( class_exists( AjaxActionRegistry::class ) ) {
+            ( new AjaxActionRegistry(
+                [
+                    'capability'   => 'manage_options',
+                    'nonce_action' => self::NONCE_ACTION,
+                    'nonce_field'  => 'nonce',
+                ]
+            ) )->register(
+                [
+                    self::AJAX_ACTION => [
+                        'callback' => [ self::class, 'load_tab' ],
+                    ],
+                ]
+            );
+        }
     }
 
     public static function add_menu(): void {
@@ -41,12 +79,10 @@ final class AdminPage {
             return;
         }
 
-        wp_enqueue_style(
-            'smc-organization-admin',
-            SMC_PLUGIN_URL . 'assets/admin.css',
-            [],
-            SMC_VERSION
-        );
+        $css = self::admin_css();
+        if ( '' !== $css ) {
+            wp_add_inline_style( 'common', $css );
+        }
     }
 
     /** @param array<string,string> $links @return array<string,string> */
@@ -78,36 +114,74 @@ final class AdminPage {
             return;
         }
 
-        $tabs = apply_filters(
-            'smc_dashboard_tabs',
-            [
-                'overview'   => 'Overview',
-                'settings'   => 'Settings',
-                'fields'     => 'Field Model',
-                'shortcodes' => 'Shortcodes',
-                'schema'     => 'Live Schema',
-            ]
-        );
-        $tab = sanitize_key( $_GET['tab'] ?? 'overview' );
-        if ( ! isset( $tabs[ $tab ] ) ) {
-            $tab = 'overview';
-        }
+        $tabs = self::tabs();
+        $tab  = self::current_tab( $tabs );
 
         echo '<div class="wrap smc-admin">';
         self::render_header();
-        self::render_tabs( $tabs, $tab );
 
-        echo '<main class="smc-admin__content">';
-        if ( ! apply_filters( 'smc_dashboard_render_tab', false, $tab ) ) {
-            match ( $tab ) {
-                'settings'   => self::render_settings(),
-                'fields'     => self::render_fields(),
-                'shortcodes' => self::render_shortcodes(),
-                'schema'     => self::render_schema(),
-                default      => self::render_overview(),
-            };
+        ( new HostTabsRenderer() )->render(
+            [
+                'tabs'                => $tabs,
+                'active'              => $tab,
+                'page_url'            => self::page_url(),
+                'ajax_action'         => self::AJAX_ACTION,
+                'nonce'               => wp_create_nonce( self::NONCE_ACTION ),
+                'nonce_field'         => 'nonce',
+                'root_id'             => 'smc-organization-tabs',
+                'panel_id'            => 'smc-organization-panel',
+                'label'               => 'SMC Organization Profile sections',
+                'layout'              => 'sidebar',
+                'groups'              => self::GROUPS,
+                'sidebar_identity'    => [
+                    'plugin_name'     => 'SMC Organization Profile',
+                    'current_version' => SMC_VERSION,
+                    'github_url'      => 'https://github.com/mikeyperes/smc-organization-profile-integration',
+                    'core_name'       => CoreVersion::PACKAGE_NAME,
+                    'core_version'    => CoreVersion::current(),
+                    'core_github_url' => 'https://github.com/mikeyperes/hexa-wordpress-plugin-core',
+                ],
+                'sidebar_collapsible' => true,
+                'sidebar_collapsed'   => false,
+                'sidebar_persist'     => true,
+                'render_callback'     => [ self::class, 'render_panel' ],
+            ]
+        );
+
+        echo '</div>';
+    }
+
+    public static function load_tab( AjaxRequest $request ): array {
+        $tabs = self::tabs();
+        $tab  = $request->key( 'tab', '', 'post' );
+
+        if ( ! isset( $tabs[ $tab ] ) ) {
+            throw AjaxFailure::not_found( 'Unknown SMC dashboard tab.', 'unknown_tab' );
         }
-        echo '</main></div>';
+
+        ob_start();
+        self::render_panel( $tab );
+        $html = (string) ob_get_clean();
+
+        return [
+            'html'  => $html,
+            'tab'   => $tab,
+            'label' => self::tab_label( $tabs[ $tab ] ),
+        ];
+    }
+
+    public static function render_panel( string $tab ): void {
+        if ( apply_filters( 'smc_dashboard_render_tab', false, $tab ) ) {
+            return;
+        }
+
+        match ( $tab ) {
+            'settings'   => self::render_settings(),
+            'fields'     => self::render_fields(),
+            'shortcodes' => self::render_shortcodes(),
+            'schema'     => self::render_schema(),
+            default      => self::render_overview(),
+        };
     }
 
     private static function render_header(): void {
@@ -115,28 +189,11 @@ final class AdminPage {
         echo '<div><p class="smc-admin__eyebrow">SMC</p>';
         echo '<h1>Organization Profile Integration</h1>';
         echo '<p>Organization data, schema, REST output, and template interfaces.</p></div>';
-        echo '<div class="smc-admin__version">Version ' . esc_html( SMC_VERSION ) . '</div>';
         echo '</header>';
 
         if ( isset( $_GET['updated'] ) ) {
             echo '<div class="notice notice-success is-dismissible"><p>SMC settings saved.</p></div>';
         }
-    }
-
-    /** @param array<string,string> $tabs */
-    private static function render_tabs( array $tabs, string $active ): void {
-        echo '<nav class="nav-tab-wrapper smc-admin__tabs" aria-label="SMC settings">';
-        foreach ( $tabs as $id => $label ) {
-            $url = add_query_arg(
-                [ 'page' => self::SLUG, 'tab' => $id ],
-                admin_url( 'options-general.php' )
-            );
-            $class = 'nav-tab' . ( $id === $active ? ' nav-tab-active' : '' );
-            echo '<a class="' . esc_attr( $class ) . '" href="' . esc_url( $url ) . '">'
-                . esc_html( $label )
-                . '</a>';
-        }
-        echo '</nav>';
     }
 
     private static function render_overview(): void {
@@ -182,6 +239,9 @@ final class AdminPage {
                 'posts_per_page' => -1,
                 'orderby'        => 'title',
                 'order'          => 'ASC',
+                'no_found_rows'  => true,
+                'update_post_meta_cache' => false,
+                'update_post_term_cache' => false,
             ]
         );
         $pages = get_pages( [ 'sort_column' => 'post_title', 'sort_order' => 'ASC' ] );
@@ -245,9 +305,12 @@ final class AdminPage {
         echo '<h2>Shortcodes</h2><p>All shortcode values are read from the same normalized organization source as REST and schema.</p></div>';
         echo '<table class="widefat striped smc-admin__table"><thead><tr><th>Shortcode</th><th>Description</th><th>Live Value</th></tr></thead><tbody>';
         foreach ( ShortcodeRegistrar::catalog() as $item ) {
-            $example = $primary ? do_shortcode( $item['shortcode'] ) : '';
             if ( str_contains( $item['shortcode'], 'gallery' ) ) {
                 $example = $primary ? count( $primary->gallery() ) . ' image(s)' : '';
+            } elseif ( str_contains( $item['shortcode'], '_schema' ) ) {
+                $example = $primary ? 'Available in Live Schema' : '';
+            } else {
+                $example = $primary ? do_shortcode( $item['shortcode'] ) : '';
             }
             echo '<tr><td><code>' . esc_html( $item['shortcode'] ) . '</code></td>';
             echo '<td>' . esc_html( $item['description'] ) . '</td>';
@@ -301,5 +364,42 @@ final class AdminPage {
         echo '<label><input type="checkbox" name="' . esc_attr( $name ) . '" value="1" '
             . checked( Settings::enabled( $name ), true, false )
             . '> <span>' . esc_html( $label ) . '</span></label>';
+    }
+
+    /** @return array<string,mixed> */
+    private static function tabs(): array {
+        $tabs = apply_filters( 'smc_dashboard_tabs', self::TABS );
+        return is_array( $tabs ) ? $tabs : self::TABS;
+    }
+
+    /** @param array<string,mixed> $tabs */
+    private static function current_tab( array $tabs ): string {
+        $requested = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : 'overview';
+        return isset( $tabs[ $requested ] ) ? $requested : 'overview';
+    }
+
+    private static function tab_label( mixed $tab ): string {
+        if ( is_array( $tab ) && isset( $tab['label'] ) ) {
+            return (string) $tab['label'];
+        }
+
+        return (string) $tab;
+    }
+
+    private static function page_url(): string {
+        return add_query_arg( 'page', self::SLUG, admin_url( 'options-general.php' ) );
+    }
+
+    private static function admin_css(): string {
+        static $css = null;
+
+        if ( is_string( $css ) ) {
+            return $css;
+        }
+
+        $path = SMC_PLUGIN_DIR . 'assets/admin.css';
+        $css  = is_readable( $path ) ? (string) file_get_contents( $path ) : '';
+
+        return $css;
     }
 }

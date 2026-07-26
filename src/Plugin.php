@@ -7,9 +7,12 @@ namespace SMC\OrganizationProfile;
 use SMC\OrganizationProfile\Acf\OrganizationFields;
 use SMC\OrganizationProfile\Admin\AdminPage;
 use SMC\OrganizationProfile\Core\CoreIntegration;
+use SMC\OrganizationProfile\Data\MediaNormalizer;
+use SMC\OrganizationProfile\Data\OrganizationRepository;
 use SMC\OrganizationProfile\Dependencies\HwsContentTypes;
 use SMC\OrganizationProfile\Http\RestController;
 use SMC\OrganizationProfile\Migration\LegacyFieldMigrator;
+use SMC\OrganizationProfile\Schema\OrganizationSchema;
 use SMC\OrganizationProfile\Schema\SchemaInjector;
 use SMC\OrganizationProfile\Shortcodes\ShortcodeRegistrar;
 use SMC\OrganizationProfile\Support\Settings;
@@ -35,14 +38,18 @@ final class Plugin {
         }
 
         self::$booted = true;
-        Settings::install_defaults();
-        HwsContentTypes::register();
         OrganizationFields::register_hooks();
         LegacyFieldMigrator::register();
         SchemaInjector::register();
         RestController::register();
         ShortcodeRegistrar::register();
-        AdminPage::register();
+        self::register_cache_invalidation();
+
+        if ( is_admin() || wp_doing_ajax() ) {
+            HwsContentTypes::register();
+            AdminPage::register();
+        }
+
         CoreIntegration::boot();
 
         do_action( 'smc_organization_profile_booted' );
@@ -57,5 +64,19 @@ final class Plugin {
 
     public static function deactivate(): void {
         flush_rewrite_rules();
+    }
+
+    public static function clear_request_caches( mixed ...$ignored ): void {
+        unset( $ignored );
+        OrganizationRepository::clear_cache();
+        OrganizationSchema::clear_cache();
+        MediaNormalizer::clear_cache();
+    }
+
+    private static function register_cache_invalidation(): void {
+        add_action( 'clean_post_cache', [ self::class, 'clear_request_caches' ], 10, 2 );
+        add_action( 'added_post_meta', [ self::class, 'clear_request_caches' ], 10, 4 );
+        add_action( 'updated_post_meta', [ self::class, 'clear_request_caches' ], 10, 4 );
+        add_action( 'deleted_post_meta', [ self::class, 'clear_request_caches' ], 10, 4 );
     }
 }

@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.2
+
+- Replaced the handwritten admin tabs with the current grouped Hexa Core sidebar and AJAX panel loading.
+- Removed blocking plugin stylesheet requests from the admin dashboard and frontend gallery.
+- Added request caches for ACF definitions, field values, media normalization, organization records, and schema bundles.
+- Removed repeated default installation and duplicate shared content-type registration from runtime requests.
+- Reduced admin query overhead and updated the vendored Hexa WordPress Plugin Core to 0.19.77.
+
 ## 1.0.1
 
 - Prevented unmanaged pages from falling back to the primary organization during schema context resolution.

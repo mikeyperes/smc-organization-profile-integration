@@ -11,6 +11,9 @@ final class OrganizationFields {
 
     private static bool $registered = false;
 
+    /** @var list<array<string,mixed>>|null */
+    private static ?array $fields = null;
+
     public static function register_hooks(): void {
         add_action( 'acf/init', [ self::class, 'register' ], 5 );
         add_filter( 'acf/update_value/name=knowledge_graph_id', [ self::class, 'sanitize_kgid' ], 10, 3 );
@@ -44,7 +47,11 @@ final class OrganizationFields {
 
     /** @return list<array<string,mixed>> */
     public static function fields(): array {
-        return [
+        if ( null !== self::$fields ) {
+            return self::$fields;
+        }
+
+        self::$fields = [
             FieldRegistry::tab( 'tab_identity', 'Identity' ),
             FieldRegistry::toggle( 'schema_enabled', 'Include in Schema', 'schema_enabled', [
                 'instructions' => 'Controls live SMC schema output for this organization.',
@@ -232,6 +239,8 @@ final class OrganizationFields {
                 'instructions' => '[smc_organization_gallery] or [smc_organization field="gallery" format="json"]',
             ] ),
         ];
+
+        return self::$fields;
     }
 
     public static function sanitize_kgid( mixed $value, mixed $post_id, mixed $field ): mixed {

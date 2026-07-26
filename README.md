@@ -94,6 +94,10 @@ The migrator preserves all legacy metadata and fills canonical fields only when 
 
 Migration reports are available in the SMC Overview tab.
 
+## Admin and Runtime
+
+The settings dashboard uses the grouped Hexa Core sidebar and loads tab panels through guarded AJAX requests. Plugin CSS is delivered through WordPress's existing style pipeline, and normalized organization, media, field, and schema values are cached for the duration of each request.
+
 ## Development
 
 ```bash

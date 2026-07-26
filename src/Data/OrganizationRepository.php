@@ -9,11 +9,21 @@ use SMC\OrganizationProfile\Support\Settings;
 defined( 'ABSPATH' ) || exit;
 
 final class OrganizationRepository {
+    private static ?int $primary_id = null;
+
+    /** @var array<int,OrganizationData|null> */
+    private static array $data = [];
+
     public static function primary_id(): int {
+        if ( null !== self::$primary_id ) {
+            return self::$primary_id;
+        }
+
         foreach ( [ Settings::PRIMARY_ORGANIZATION, 'sfpf_primary_organization' ] as $option ) {
             $id = absint( get_option( $option, 0 ) );
             if ( self::is_public_organization( $id ) ) {
-                return $id;
+                self::$primary_id = $id;
+                return self::$primary_id;
             }
         }
 
@@ -28,7 +38,8 @@ final class OrganizationRepository {
             ]
         );
 
-        return isset( $posts[0] ) ? absint( $posts[0] ) : 0;
+        self::$primary_id = isset( $posts[0] ) ? absint( $posts[0] ) : 0;
+        return self::$primary_id;
     }
 
     public static function is_organization( int $post_id ): bool {
@@ -58,6 +69,21 @@ final class OrganizationRepository {
 
     public static function data( int $post_id = 0 ): ?OrganizationData {
         $post_id = $post_id > 0 ? $post_id : self::primary_id();
-        return self::is_organization( $post_id ) ? new OrganizationData( $post_id ) : null;
+        if ( array_key_exists( $post_id, self::$data ) ) {
+            return self::$data[ $post_id ];
+        }
+
+        self::$data[ $post_id ] = self::is_organization( $post_id ) ? new OrganizationData( $post_id ) : null;
+        return self::$data[ $post_id ];
+    }
+
+    public static function clear_cache( int $post_id = 0 ): void {
+        if ( $post_id > 0 ) {
+            unset( self::$data[ $post_id ] );
+        } else {
+            self::$data = [];
+        }
+
+        self::$primary_id = null;
     }
 }

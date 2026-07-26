@@ -1,5 +1,6 @@
 .smc-admin {
-    max-width: 1180px;
+    max-width: 1440px;
+    min-width: 0;
 }
 
 .smc-admin__header {
@@ -31,19 +32,15 @@
     text-transform: uppercase;
 }
 
-.smc-admin__version {
-    flex: 0 0 auto;
-    padding-top: 6px;
-    color: #50575e;
-    font-variant-numeric: tabular-nums;
+.smc-admin .hpc-host-tabs-shell,
+.smc-admin .hpc-host-main,
+.smc-admin .hpc-host-tab-panel {
+    max-width: 100%;
+    min-width: 0;
 }
 
-.smc-admin__tabs {
-    margin: 18px 0 0;
-}
-
-.smc-admin__content {
-    padding: 22px 0 48px;
+.smc-admin .hpc-host-tab-panel {
+    overflow-x: auto;
 }
 
 .smc-admin__section {
@@ -180,10 +177,6 @@
 @media (max-width: 600px) {
     .smc-admin__header {
         display: block;
-    }
-
-    .smc-admin__version {
-        margin-top: 12px;
     }
 
     .smc-status-grid {

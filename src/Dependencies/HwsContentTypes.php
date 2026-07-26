@@ -22,7 +22,6 @@ final class HwsContentTypes {
 
     public static function register(): void {
         add_action( 'admin_notices', [ self::class, 'render_notice' ] );
-        add_action( 'init', [ self::class, 'ensure_registered' ], 1 );
     }
 
     public static function activate(): void {
@@ -48,12 +47,6 @@ final class HwsContentTypes {
         }
 
         update_option( 'smp_enable_acf_organization', 0, false );
-    }
-
-    public static function ensure_registered(): void {
-        if ( class_exists( SharedContentTypes::class ) ) {
-            SharedContentTypes::register_enabled();
-        }
     }
 
     public static function hws_ready(): bool {
