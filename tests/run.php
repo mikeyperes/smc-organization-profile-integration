@@ -42,7 +42,7 @@ $gallery_renderer = $read( $root . '/src/Shortcodes/GalleryRenderer.php' );
 
 preg_match( '/^ \* Version:\s*([^\s]+)/m', $initialization, $header_match );
 preg_match( "/define\( 'SMC_VERSION', '([^']+)' \)/", $initialization, $constant_match );
-$expect( '1.0.2' === ( $header_match[1] ?? '' ), 'plugin header version is 1.0.2' );
+$expect( '1.0.3' === ( $header_match[1] ?? '' ), 'plugin header version is 1.0.3' );
 $expect( ( $header_match[1] ?? '' ) === ( $constant_match[1] ?? '' ), 'plugin header and runtime versions match' );
 $expect( str_contains( $initialization, 'Plugin Name: SMC Organization Profile Integration' ), 'approved plugin name is used' );
 $expect( str_contains( $initialization, 'Text Domain: smc-organization-profile-integration' ), 'approved plugin slug is used' );
@@ -142,11 +142,12 @@ $expect(
     && str_contains( $graph, "'ProfilePage'" ),
     'graph supports website and page nodes'
 );
+$core_integration = $read( $root . '/src/Core/CoreIntegration.php' );
 $expect(
-    str_contains( $injector, "add_action( 'wp_head'" )
+    str_contains( $core_integration, 'new CoreSchemaInjector' )
     && str_contains( $injector, "add_filter( 'rank_math/json_ld'" )
-    && str_contains( $injector, 'JSON_HEX_TAG' ),
-    'frontend injection and Rank Math coexistence are guarded'
+    && str_contains( $injector, 'SchemaDocumentRenderer' ),
+    'frontend injection and Rank Math coexistence are guarded through Hexa WP Core'
 );
 $expect( str_contains( $injector, 'if ( $organization_id <= 0 )' ), 'unmanaged frontend requests cannot fall back to the primary organization' );
 foreach ( [ '/organizations', '/organizations/primary', '/organizations/(?P<id>\\d+)', '/organizations/(?P<id>\\d+)/schema' ] as $route ) {
@@ -174,10 +175,9 @@ $expect(
     'admin tabs load lazily without a blocking plugin stylesheet request'
 );
 $expect(
-    str_contains( $admin, "'no_found_rows'  => true" )
-    && str_contains( $admin, "'update_post_meta_cache' => false" )
-    && str_contains( $admin, "'update_post_term_cache' => false" ),
-    'admin selector queries disable unnecessary caches and row counts'
+    ! str_contains( $admin, "self::select_row( Settings::PRIMARY_ORGANIZATION" )
+    && str_contains( $admin, 'tab=website-types' ),
+    'admin delegates canonical entity selection to HWS Base Tools'
 );
 $expect(
     str_contains( $field_reader, 'private array $cache' )
@@ -198,7 +198,7 @@ $expect(
     && str_contains( $gallery_renderer, 'wp_add_inline_style' ),
     'frontend gallery avoids a blocking plugin stylesheet request'
 );
-$expect( '0.19.77' === trim( $read( $root . '/lib/hexa-wordpress-plugin-core/VERSION' ) ), 'plugin bundles Hexa Core 0.19.77' );
+$expect( '0.19.78' === trim( $read( $root . '/lib/hexa-wordpress-plugin-core/VERSION' ) ), 'plugin bundles Hexa Core 0.19.78' );
 $expect( is_file( $root . '/docs/architecture.md' ) && is_file( $root . '/docs/schema-contract.md' ), 'architecture and schema contracts are documented' );
 
 $root_php = array_map( 'basename', glob( $root . '/*.php' ) ?: [] );

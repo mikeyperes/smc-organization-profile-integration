@@ -113,9 +113,7 @@ final class OrganizationSchema {
             $description = $data->text( 'company_description' );
         }
         if ( '' === $description ) {
-            $description = Normalizer::text(
-                get_post_field( 'post_excerpt', $data->id() ) ?: get_post_field( 'post_content', $data->id() )
-            );
+            $description = $data->description();
         }
 
         $identifiers = [];

@@ -4,6 +4,7 @@ declare( strict_types=1 );
 
 namespace SMC\OrganizationProfile\Schema;
 
+use Hexa\PluginCore\SchemaTools\SchemaGraph;
 use SMC\OrganizationProfile\Data\MediaNormalizer;
 use SMC\OrganizationProfile\Data\Normalizer;
 
@@ -335,9 +336,6 @@ final class NodeFactory {
 
     /** @param array<string,mixed> $values @return array<string,mixed> */
     public static function clean( array $values ): array {
-        return array_filter(
-            $values,
-            static fn ( mixed $value ): bool => Normalizer::present( $value )
-        );
+        return SchemaGraph::clean( $values );
     }
 }

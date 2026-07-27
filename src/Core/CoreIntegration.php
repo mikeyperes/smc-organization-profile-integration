@@ -9,8 +9,11 @@ use Hexa\PluginCore\CoreRuntime\PluginContext;
 use Hexa\PluginCore\PluginUpdates\GitHubPluginUpdater;
 use Hexa\PluginCore\PluginUpdates\UpdaterAjaxController;
 use Hexa\PluginCore\PluginUpdates\UpdaterConfig;
+use Hexa\PluginCore\SchemaTools\SchemaInjector as CoreSchemaInjector;
 use Hexa\PluginCore\WpAdminTabs\CoreTabConfig;
 use Hexa\PluginCore\WpAdminTabs\CoreTabModule;
+use SMC\OrganizationProfile\ContentTypes\OrganizationContentType;
+use SMC\OrganizationProfile\Schema\SchemaInjector;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -41,7 +44,19 @@ final class CoreIntegration {
 
         $bootstrap
             ->add_module( new GitHubPluginUpdater( $updater ) )
-            ->add_module( new UpdaterAjaxController( $updater ) );
+            ->add_module( new UpdaterAjaxController( $updater ) )
+            ->add_module( OrganizationContentType::registry() )
+            ->add_module(
+                new CoreSchemaInjector(
+                    [ SchemaInjector::class, 'schema' ],
+                    [
+                        'hook'          => 'wp_head',
+                        'priority'      => 2,
+                        'script_id'     => 'smc-organization-schema',
+                        'should_output' => [ SchemaInjector::class, 'should_output' ],
+                    ]
+                )
+            );
 
         if ( is_admin() || wp_doing_ajax() ) {
             $bootstrap->add_module(

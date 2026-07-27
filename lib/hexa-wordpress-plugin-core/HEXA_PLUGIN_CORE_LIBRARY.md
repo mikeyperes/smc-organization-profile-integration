@@ -28,8 +28,10 @@ src/CoreContracts/      Hexa\PluginCore\CoreContracts
 src/CorePackageUpdates/ Hexa\PluginCore\CorePackageUpdates
 src/CoreRuntime/        Hexa\PluginCore\CoreRuntime
 src/ContentCleanup/     Hexa\PluginCore\ContentCleanup
+src/ContentTypes/       Hexa\PluginCore\ContentTypes
 src/CredentialVault/    Hexa\PluginCore\CredentialVault
 src/DatabaseCleanup/    Hexa\PluginCore\DatabaseCleanup
+src/EntitySources/      Hexa\PluginCore\EntitySources
 src/FieldStructures/    Hexa\PluginCore\FieldStructures
 src/FrontendForms/      Hexa\PluginCore\FrontendForms
 src/FaqSets/            Hexa\PluginCore\FaqSets
@@ -45,10 +47,12 @@ src/SnippetRegistry/    Hexa\PluginCore\SnippetRegistry
 src/ShortcodeRegistry/  Hexa\PluginCore\ShortcodeRegistry
 src/SiteStructure/      Hexa\PluginCore\SiteStructure
 src/SchemaDetection/    Hexa\PluginCore\SchemaDetection
+src/SchemaTools/        Hexa\PluginCore\SchemaTools
 src/SearchDisplay/      Hexa\PluginCore\SearchDisplay
 src/SearchQuery/        Hexa\PluginCore\SearchQuery
 src/SmartSearch/        Hexa\PluginCore\SmartSearch
 src/SystemEnvironment/  Hexa\PluginCore\SystemEnvironment
+src/Taxonomies/         Hexa\PluginCore\Taxonomies
 src/Typography/         Hexa\PluginCore\Typography
 src/WpAdminUiCleanup/   Hexa\PluginCore\WpAdminUiCleanup
 src/WpAdminAjax/        Hexa\PluginCore\WpAdminAjax
@@ -814,17 +818,51 @@ Example:
 ]);
 ```
 
+## Content Types
+
+Namespace: Hexa\PluginCore\ContentTypes
+
+Classes: ContentTypeDefinition, ContentTypeSettingsStore, ContentTypeRegistry, ContentTypeRegistrar, ContentTypeAjaxController, ContentTypeRenderer.
+
+Use this for one reusable CPT contract across host plugins. Hosts supply owned or external definitions and keep business behavior. Core keeps the post-type key immutable, persists editable singular/plural labels and rewrite slugs, registers attached ACF groups, and renders the collapsed management UI. Register the registry as a `CoreBootstrap` module. See `docs/content-types.md` and test with `tests/content-types.php`.
+
+## Entity Sources
+
+Namespace: Hexa\PluginCore\EntitySources
+
+Classes: CanonicalEntityResolver, PrimaryEntityManager, PrimaryEntityModule, PrimaryEntityAjaxController, PrimaryEntityRenderer, EntityFieldInspector.
+
+Use this for an optional HWS-owned website type and primary user/post entity. Consumers resolve the canonical entity and its bound WordPress author rather than maintaining competing settings. No primary entity is a supported configuration. See `docs/entity-sources.md` and test with `tests/entity-sources.php`.
+
 ## Field Structures
 
 Namespace: Hexa\PluginCore\FieldStructures
 
-Classes: FieldStructureManager, FieldStructureRenderer
+Classes: AcfFieldGroupRegistry, AcfFieldGroupSettingsStore, AcfFieldGroupAjaxController, AcfFieldGroupRenderer, AcfSettingsPanel, FieldStructureManager, FieldStructureRenderer
 
 Use this for admin displays that explain and test ACF field groups, custom post types, taxonomies, and option-backed structures. Host plugins provide definitions; Hexa Core normalizes them, renders one row per structure, shows enabled and registered status, exposes setting toggles through the host save AJAX action, and keeps fields, dependencies, code examples, test reports, and activity notes in a consistent layout.
 
 Definition keys: id, label, type, setting_key, enabled, registered, acf_group_key, object_name, location, fields, dependencies, instructions, code_example, test_report, activity, edit_url. The registered and test_report values may be callbacks. Do not move plugin-specific ACF registration arrays into core; core owns the display and status model only.
 
 Example use: create a FieldStructureRenderer, pass an array of structure definitions, and pass save_action plus nonce when toggles should save through AJAX.
+
+Use `AcfFieldGroupRegistry` when Core must own the actual `acf/init` registration path and toggle state. Use `AcfSettingsPanel` to display established option-backed ACF groups inside a host tab without moving their stored values. Host plugins always retain their exact field arrays.
+
+## Schema Tools
+
+Namespace: Hexa\PluginCore\SchemaTools
+
+Classes: SchemaGraph, SchemaDocumentRenderer, SchemaInjector, SchemaDashboardRenderer.
+
+Host plugins build their own schema objects and hand the result to Core for graph cleanup, duplicate-node merging, safe JSON-LD rendering, and one-shot hook output. Do not move domain-specific Person, Organization, Publication, Profile, or Article mappings into Core. See `docs/schema-tools.md` and test with `tests/schema-document.php`.
+
+## Taxonomies
+
+Namespace: Hexa\PluginCore\Taxonomies
+
+Classes: TaxonomyDefinition, TaxonomyRegistry, TaxonomyRenderer.
+
+Hosts own taxonomy keys, terms, object types, and editorial meaning. Core owns duplicate-safe callback-backed registration and the shared reference UI. See `docs/taxonomies.md` and test with `tests/taxonomies.php`.
 
 ## Error Logs
 

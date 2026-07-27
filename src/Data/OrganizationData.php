@@ -22,20 +22,40 @@ final class OrganizationData {
 
     private readonly FieldReader $fields;
 
-    public function __construct( private readonly int $post_id ) {
-        $this->fields = new FieldReader( $post_id );
+    public function __construct( private readonly int $object_id, private readonly string $kind = 'post' ) {
+        $this->fields = new FieldReader( $object_id, $kind );
     }
 
     public function id(): int {
-        return $this->post_id;
+        return $this->object_id;
+    }
+
+    public function kind(): string {
+        return $this->kind;
+    }
+
+    public function is_user(): bool {
+        return 'user' === $this->kind;
     }
 
     public function name(): string {
-        return Normalizer::text( get_the_title( $this->post_id ) );
+        if ( $this->is_user() ) {
+            $user = get_userdata( $this->object_id );
+            return $user ? Normalizer::text( $user->display_name ) : '';
+        }
+        return Normalizer::text( get_the_title( $this->object_id ) );
     }
 
     public function permalink(): string {
-        return Normalizer::url( get_permalink( $this->post_id ) );
+        return Normalizer::url( $this->is_user() ? get_author_posts_url( $this->object_id ) : get_permalink( $this->object_id ) );
+    }
+
+    public function description(): string {
+        if ( $this->is_user() ) {
+            $user = get_userdata( $this->object_id );
+            return $user ? Normalizer::text( $user->description ) : '';
+        }
+        return Normalizer::text( get_post_field( 'post_excerpt', $this->object_id ) ?: get_post_field( 'post_content', $this->object_id ) );
     }
 
     public function raw( string $name ): mixed {
@@ -173,12 +193,20 @@ final class OrganizationData {
 
     /** @return array<string,mixed> */
     public function logo(): array {
-        return MediaNormalizer::image( $this->raw( 'logo' ) );
+        $value = $this->raw( 'logo' );
+        if ( ! Normalizer::present( $value ) && $this->is_user() ) {
+            $value = get_avatar_url( $this->object_id, [ 'size' => 512 ] );
+        }
+        return MediaNormalizer::image( $value );
     }
 
     /** @return array<string,mixed> */
     public function primary_image(): array {
-        return MediaNormalizer::image( $this->raw( 'primary_image' ) );
+        $value = $this->raw( 'primary_image' );
+        if ( ! Normalizer::present( $value ) && $this->is_user() ) {
+            $value = get_avatar_url( $this->object_id, [ 'size' => 1200 ] );
+        }
+        return MediaNormalizer::image( $value );
     }
 
     /** @return list<array<string,mixed>> */
@@ -199,6 +227,7 @@ final class OrganizationData {
     public function export(): array {
         return [
             'id'                  => $this->id(),
+            'source_kind'         => $this->kind(),
             'name'                => $this->name(),
             'legal_name'          => $this->text( 'legal_name' ),
             'alternate_names'     => $this->alternate_names(),

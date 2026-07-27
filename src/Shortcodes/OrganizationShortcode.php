@@ -4,6 +4,7 @@ declare( strict_types=1 );
 
 namespace SMC\OrganizationProfile\Shortcodes;
 
+use Hexa\PluginCore\SchemaTools\SchemaDocumentRenderer;
 use SMC\OrganizationProfile\Data\Normalizer;
 use SMC\OrganizationProfile\Data\OrganizationData;
 use SMC\OrganizationProfile\Data\OrganizationRepository;
@@ -188,13 +189,14 @@ final class OrganizationShortcode {
         }
 
         $graph = OrganizationGraph::build( $data->id(), get_queried_object_id() ?: $data->id() );
-        $json = wp_json_encode( $graph, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG );
-        if ( false === $json ) {
+        $renderer = new SchemaDocumentRenderer();
+        $json = $renderer->json( $graph );
+        if ( '' === $json ) {
             return '';
         }
 
         if ( 'script' === $attributes['format'] ) {
-            return '<script type="application/ld+json" class="smc-organization-schema-shortcode">' . $json . '</script>';
+            return $renderer->script( $graph, '', 'smc-organization-schema-shortcode' );
         }
 
         return esc_html( $json );

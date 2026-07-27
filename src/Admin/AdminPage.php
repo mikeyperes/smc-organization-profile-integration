@@ -4,12 +4,15 @@ declare( strict_types=1 );
 
 namespace SMC\OrganizationProfile\Admin;
 
+use Hexa\PluginCore\ContentTypes\ContentTypeRenderer;
 use Hexa\PluginCore\CoreRuntime\CoreVersion;
+use Hexa\PluginCore\SchemaTools\SchemaDocumentRenderer;
 use Hexa\PluginCore\WpAdminAjax\AjaxActionRegistry;
 use Hexa\PluginCore\WpAdminAjax\AjaxFailure;
 use Hexa\PluginCore\WpAdminAjax\AjaxRequest;
 use Hexa\PluginCore\WpAdminTabs\HostTabsRenderer;
 use SMC\OrganizationProfile\Acf\OrganizationFields;
+use SMC\OrganizationProfile\ContentTypes\OrganizationContentType;
 use SMC\OrganizationProfile\Data\OrganizationRepository;
 use SMC\OrganizationProfile\Dependencies\HwsContentTypes;
 use SMC\OrganizationProfile\Http\RestController;
@@ -30,6 +33,7 @@ final class AdminPage {
     private const TABS = [
         'overview'   => 'Overview',
         'settings'   => 'Settings',
+        'content-types' => 'Custom Post Types',
         'fields'     => 'Field Model',
         'shortcodes' => 'Shortcodes',
         'schema'     => 'Live Schema',
@@ -37,7 +41,7 @@ final class AdminPage {
 
     private const GROUPS = [
         [ 'label' => 'Overview', 'tabs' => [ 'overview' ] ],
-        [ 'label' => 'Organization', 'tabs' => [ 'settings', 'fields', 'shortcodes', 'schema' ] ],
+        [ 'label' => 'Organization', 'tabs' => [ 'settings', 'content-types', 'fields', 'shortcodes', 'schema' ] ],
         [ 'label' => 'System', 'tabs' => [ 'hexa-core' ] ],
     ];
 
@@ -177,6 +181,7 @@ final class AdminPage {
 
         match ( $tab ) {
             'settings'   => self::render_settings(),
+            'content-types' => self::render_content_types(),
             'fields'     => self::render_fields(),
             'shortcodes' => self::render_shortcodes(),
             'schema'     => self::render_schema(),
@@ -217,8 +222,9 @@ final class AdminPage {
         echo '<a class="button button-primary" href="' . esc_url( admin_url( 'edit.php?post_type=organization' ) ) . '">Manage Organizations</a>';
         echo '<a class="button" href="' . esc_url( admin_url( 'post-new.php?post_type=organization' ) ) . '">Add Organization</a>';
         if ( $primary ) {
-            echo '<a class="button" href="' . esc_url( get_edit_post_link( $primary->id() ) ) . '">Edit Primary</a>';
-            if ( 'publish' === get_post_status( $primary->id() ) ) {
+            $edit_url = $primary->is_user() ? get_edit_user_link( $primary->id() ) : get_edit_post_link( $primary->id() );
+            echo '<a class="button" href="' . esc_url( $edit_url ) . '">Edit Primary</a>';
+            if ( $primary->is_user() || 'publish' === get_post_status( $primary->id() ) ) {
                 echo '<a class="button" href="' . esc_url( $primary->permalink() ) . '" target="_blank" rel="noopener">View Profile</a>';
             }
         }
@@ -232,27 +238,17 @@ final class AdminPage {
     }
 
     private static function render_settings(): void {
-        $organizations = get_posts(
-            [
-                'post_type'      => 'organization',
-                'post_status'    => [ 'publish', 'draft', 'pending', 'private' ],
-                'posts_per_page' => -1,
-                'orderby'        => 'title',
-                'order'          => 'ASC',
-                'no_found_rows'  => true,
-                'update_post_meta_cache' => false,
-                'update_post_term_cache' => false,
-            ]
-        );
         $pages = get_pages( [ 'sort_column' => 'post_title', 'sort_order' => 'ASC' ] );
+        $primary = OrganizationRepository::data();
 
         echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '" class="smc-settings-form">';
         wp_nonce_field( 'smc_save_settings' );
         echo '<input type="hidden" name="action" value="smc_save_settings">';
         echo '<section class="smc-admin__section"><div class="smc-admin__section-heading">';
-        echo '<h2>Primary Entity</h2><p>Select the organization and managed pages used by the graph builder.</p></div>';
+        echo '<h2>Canonical Organization</h2><p>HWS Base Tools is the source of truth for the optional primary entity. SMC consumes it when its semantic type is Organization.</p></div>';
+        echo '<p><strong>Current source:</strong> ' . esc_html( $primary ? $primary->name() . ' (' . $primary->kind() . ')' : 'No Organization entity attached' ) . '</p>';
+        echo '<p><a class="button" href="' . esc_url( admin_url( 'options-general.php?page=hws-core-tools&tab=website-types' ) ) . '">Manage in HWS Base Tools</a></p>';
         echo '<table class="form-table" role="presentation"><tbody>';
-        self::select_row( Settings::PRIMARY_ORGANIZATION, 'Primary Organization', $organizations, Settings::integer( Settings::PRIMARY_ORGANIZATION ), true );
         self::select_row( Settings::ABOUT_PAGE, 'About Page', $pages, Settings::integer( Settings::ABOUT_PAGE ) );
         self::select_row( Settings::PROFILE_PAGE, 'Profile Page', $pages, Settings::integer( Settings::PROFILE_PAGE ) );
         echo '</tbody></table></section>';
@@ -268,6 +264,17 @@ final class AdminPage {
         echo '</fieldset></section>';
         submit_button( 'Save SMC Settings' );
         echo '</form>';
+    }
+
+    private static function render_content_types(): void {
+        echo ( new ContentTypeRenderer() )->render(
+            OrganizationContentType::registry(),
+            [
+                'title' => 'Custom Post Types',
+                'description' => 'SMC extends the HWS-owned Organization content type. Its ACF structure is registered and controlled through Hexa WP Core without duplicating CPT ownership.',
+                'persist_prefix' => 'smc',
+            ]
+        );
     }
 
     private static function render_fields(): void {
@@ -331,10 +338,10 @@ final class AdminPage {
         }
 
         $graph = OrganizationGraph::build( $primary->id(), $primary->id() );
-        $json = wp_json_encode( $graph, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
+        $json = ( new SchemaDocumentRenderer() )->json( $graph );
         echo '<div class="smc-admin__actions">';
-        echo '<a class="button" href="' . esc_url( rest_url( RestController::NAMESPACE . '/organizations/' . $primary->id() . '/schema' ) ) . '" target="_blank" rel="noopener">Open REST Schema</a>';
-        if ( 'publish' === get_post_status( $primary->id() ) ) {
+        echo '<a class="button" href="' . esc_url( rest_url( RestController::NAMESPACE . '/organizations/primary' ) ) . '" target="_blank" rel="noopener">Open Primary REST Data</a>';
+        if ( $primary->is_user() || 'publish' === get_post_status( $primary->id() ) ) {
             echo '<a class="button" href="' . esc_url( $primary->permalink() ) . '" target="_blank" rel="noopener">Open Frontend Profile</a>';
         }
         echo '</div><pre class="smc-schema-preview"><code>' . esc_html( $json ?: '{}' ) . '</code></pre></section>';

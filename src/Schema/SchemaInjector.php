@@ -4,6 +4,7 @@ declare( strict_types=1 );
 
 namespace SMC\OrganizationProfile\Schema;
 
+use Hexa\PluginCore\SchemaTools\SchemaDocumentRenderer;
 use SMC\OrganizationProfile\Data\OrganizationRepository;
 use SMC\OrganizationProfile\Support\Settings;
 
@@ -27,34 +28,26 @@ final class SchemaInjector {
         'ProfilePage',
     ];
 
-    public static function register(): void {
-        add_action( 'wp_head', [ self::class, 'render' ], 2 );
+    public static function register_filters(): void {
         add_filter( 'rank_math/json_ld', [ self::class, 'filter_rank_math' ], 1000 );
     }
 
-    public static function render(): void {
+    public static function should_output(): bool {
+        return null !== self::current_context();
+    }
+
+    /** @return array<string,mixed> */
+    public static function schema(): array {
         $context = self::current_context();
-        if ( null === $context ) {
-            return;
+        return null === $context ? [] : OrganizationGraph::build( $context['organization_id'], $context['page_id'] );
+    }
+
+    /** Backward-compatible direct renderer; runtime hooks use Hexa WP Core's injector. */
+    public static function render(): void {
+        $script = ( new SchemaDocumentRenderer() )->script( self::schema(), 'smc-organization-schema' );
+        if ( '' !== $script ) {
+            echo "\n" . $script . "\n";
         }
-
-        $graph = OrganizationGraph::build( $context['organization_id'], $context['page_id'] );
-        if ( [] === $graph ) {
-            return;
-        }
-
-        $json = wp_json_encode(
-            $graph,
-            JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP
-        );
-
-        if ( false === $json ) {
-            return;
-        }
-
-        echo "\n<script type=\"application/ld+json\" id=\"smc-organization-schema\">"
-            . $json
-            . "</script>\n";
     }
 
     /**

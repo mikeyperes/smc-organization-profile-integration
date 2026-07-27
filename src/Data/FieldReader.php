@@ -10,11 +10,15 @@ final class FieldReader {
     /** @var array<string,mixed> */
     private array $cache = [];
 
-    public function __construct( private readonly int $post_id ) {
+    public function __construct( private readonly int $object_id, private readonly string $kind = 'post' ) {
     }
 
     public function post_id(): int {
-        return $this->post_id;
+        return $this->object_id;
+    }
+
+    public function context(): string|int {
+        return 'user' === $this->kind ? 'user_' . $this->object_id : $this->object_id;
     }
 
     public function first( string ...$names ): mixed {
@@ -34,14 +38,16 @@ final class FieldReader {
         }
 
         if ( function_exists( 'get_field' ) ) {
-            $value = get_field( $name, $this->post_id );
+            $value = get_field( $name, $this->context() );
             if ( Normalizer::present( $value ) ) {
                 $this->cache[ $name ] = $value;
                 return $this->cache[ $name ];
             }
         }
 
-        $this->cache[ $name ] = get_post_meta( $this->post_id, $name, true );
+        $this->cache[ $name ] = 'user' === $this->kind
+            ? get_user_meta( $this->object_id, $name, true )
+            : get_post_meta( $this->object_id, $name, true );
         return $this->cache[ $name ];
     }
 }

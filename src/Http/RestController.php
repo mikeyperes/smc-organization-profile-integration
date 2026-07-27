@@ -108,12 +108,22 @@ final class RestController {
     }
 
     public static function primary(): WP_REST_Response|WP_Error {
-        $id = OrganizationRepository::primary_id();
-        if ( 0 === $id ) {
+        $data = OrganizationRepository::data();
+        if ( ! $data ) {
             return new WP_Error( 'smc_primary_not_found', 'No published primary organization is configured.', [ 'status' => 404 ] );
         }
 
-        return self::organization_response( $id );
+        $id = $data->id();
+        return new WP_REST_Response(
+            [
+                'id'          => $id,
+                'source_kind' => $data->kind(),
+                'fields'      => $data->export(),
+                'schema'      => OrganizationSchema::build( $id, true ),
+                'graph'       => OrganizationGraph::build( $id, get_queried_object_id() ?: $id ),
+            ],
+            200
+        );
     }
 
     public static function show( WP_REST_Request $request ): WP_REST_Response|WP_Error {

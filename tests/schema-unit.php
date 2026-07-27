@@ -196,6 +196,36 @@ $expect(
     'legacy subtitle alias reads the normalized slogan'
 );
 
+$GLOBALS['smc_test_options']['hws_primary_entity'] = [
+    'enabled' => 1,
+    'source' => 'wordpress-user',
+    'kind' => 'user',
+    'post_type' => '',
+    'object_id' => 1,
+    'entity_type' => 'organization',
+];
+OrganizationRepository::clear_cache();
+OrganizationSchema::clear_cache();
+$canonical_entity = OrganizationRepository::primary_entity();
+$canonical_data = OrganizationRepository::data();
+$canonical_schema = OrganizationSchema::build( 1, false );
+$expect(
+    'user' === ( $canonical_entity['kind'] ?? '' ) && 1 === ( $canonical_entity['id'] ?? 0 ),
+    'canonical HWS primary Organization resolves from a WordPress user'
+);
+$expect(
+    $canonical_data?->is_user() && 'Ada Founder Media LLC' === $canonical_data->text( 'legal_name' ),
+    'user-backed Organization reads the same canonical ACF field contract'
+);
+$expect(
+    'Organization' === ( $canonical_schema['@type'] ?? '' )
+        && 'Ada Founder Media LLC' === ( $canonical_schema['legalName'] ?? '' ),
+    'user-backed Organization produces the canonical Organization schema'
+);
+unset( $GLOBALS['smc_test_options']['hws_primary_entity'] );
+OrganizationRepository::clear_cache();
+OrganizationSchema::clear_cache();
+
 if ( [] !== $failures ) {
     fwrite( STDERR, count( $failures ) . " schema checks failed.\n" );
     exit( 1 );

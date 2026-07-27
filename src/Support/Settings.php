@@ -45,7 +45,7 @@ final class Settings {
 
     /** @param array<string,mixed> $input */
     public static function update_from_request( array $input ): void {
-        foreach ( [ self::PRIMARY_ORGANIZATION, self::ABOUT_PAGE, self::PROFILE_PAGE ] as $name ) {
+        foreach ( [ self::ABOUT_PAGE, self::PROFILE_PAGE ] as $name ) {
             update_option( $name, isset( $input[ $name ] ) ? absint( $input[ $name ] ) : 0, false );
         }
 

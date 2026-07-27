@@ -35,8 +35,10 @@ hexa-wordpress-plugin-core/
     CorePackageUpdates/ -> Hexa\PluginCore\CorePackageUpdates
     CoreRuntime/        -> Hexa\PluginCore\CoreRuntime
     ContentCleanup/     -> Hexa\PluginCore\ContentCleanup
+    ContentTypes/       -> Hexa\PluginCore\ContentTypes
     CredentialVault/    -> Hexa\PluginCore\CredentialVault
     DatabaseCleanup/    -> Hexa\PluginCore\DatabaseCleanup
+    EntitySources/      -> Hexa\PluginCore\EntitySources
     FieldStructures/    -> Hexa\PluginCore\FieldStructures
     FrontendForms/      -> Hexa\PluginCore\FrontendForms
     FaqSets/            -> Hexa\PluginCore\FaqSets
@@ -57,6 +59,7 @@ hexa-wordpress-plugin-core/
     SearchQuery/        -> Hexa\PluginCore\SearchQuery
     SmartSearch/        -> Hexa\PluginCore\SmartSearch
     SystemEnvironment/  -> Hexa\PluginCore\SystemEnvironment
+    Taxonomies/         -> Hexa\PluginCore\Taxonomies
     WpAdminUiCleanup/   -> Hexa\PluginCore\WpAdminUiCleanup
     WpAdminComponents/  -> Hexa\PluginCore\WpAdminComponents
     WpAdminAjax/        -> Hexa\PluginCore\WpAdminAjax
@@ -82,9 +85,11 @@ Do not create `HWS\BaseTools\PluginCore`, `HexaWordPressPluginCore`, `Hexa\Core`
 - `CorePackageUpdates`: compares and updates the vendored Hexa WordPress Plugin Core package.
 - `CoreRuntime`: runtime value objects, plugin context, version metadata, and selected-package integrity diagnostics.
 - `ContentCleanup`: old content detection, backup file detection/deletion, article/media cleanup, all-matching and all-except-latest-X batch deletion, guarded AJAX actions, collapsible service cards, human-readable rule and scan-location detail cards, AJAX table updates, and collapsed Hexa Core Log Type 1 cleanup activity UI.
+- `ContentTypes`: immutable WordPress post-type keys with reusable registration, editable labels and rewrite slugs, ACF group toggles, guarded AJAX persistence, and a shared collapsed-by-default management UI.
 - `CredentialVault`: encrypted API-key/secret storage, masking, and credential field examples.
 - `DatabaseCleanup`: guarded provider-backed cleanup sessions, per-task cleanup, per-table optimization, pre/post provider state restoration, and live AJAX progress.
-- `FieldStructures`: reusable displays and status checks for ACF groups, custom post types, taxonomies, and option-backed feature structures.
+- `EntitySources`: optional canonical website/entity selection, legacy migration, user/post resolution, attached-author extraction, field inspection, and reusable admin UI.
+- `FieldStructures`: reusable ACF group registration and settings panels plus displays and status checks for ACF groups, custom post types, taxonomies, and option-backed feature structures.
 - `FrontendForms`: canonical public field schemas plus WordPress-safe WYSIWYG normalization and plain-text projection.
 - `FaqSets`: shared FAQ set sanitizing, item normalization, primary-set resolution, safe answer links, FAQPage schema, and reusable list or accordion output.
 - `GettingStartedChecklist`: reusable plugin startup/onboarding checklist UI, collapsible parent steps, typed step/subtask registration, guarded AJAX execution, sequential subtask processing, request metadata payloads, spinner/check/X states, callback result normalization, reusable destructive sample runner, deleted-post/deleted-file reports, image preview report assets, and collapsed dark technical activity logs.
@@ -98,10 +103,12 @@ Do not create `HWS\BaseTools\PluginCore`, `HexaWordPressPluginCore`, `Hexa\Core`
 - `ShortcodeRegistry`: shortcode definition registry, dashboard display renderer, examples, live output, and test runner contracts.
 - `SiteStructure`: reusable critical page blueprint management, assigned page storage, WordPress navigation menu creation, custom menu-item creation, add-all-assigned-pages actions, menu structure attachment, and page-to-menu-item tools.
 - `SchemaDetection`: reusable JSON-LD URL scans, source detection, duplicate schema conflict checks, FAQ validation, and dark admin report rendering.
+- `SchemaTools`: shared schema-document normalization, graph-node deduplication, JSON-LD rendering, and one-shot WordPress output injection while host plugins retain their schema builders.
 - `SearchDisplay`: five reusable front-end WordPress search-form templates with shared markup, CSS, and accessible interactions.
 - `SearchQuery`: bounded native WordPress result matching for all/any/exact terms, whole/prefix/contains word modes, selected post types and sources, one-query-only SQL hooks, and guarded JetEngine search-template bridging.
 - `SmartSearch`: smart search/X-Search AJAX endpoint and reusable typeahead renderer.
 - `SystemEnvironment`: safe constants, INI, shell wrappers, size parsing, CPU/memory detection, and byte formatting.
+- `Taxonomies`: reusable taxonomy definitions, callback-backed registration, and shared reference UI for host-owned editorial taxonomies.
 - `WpAdminUiCleanup`: shared admin UI cleanup definitions, AJAX toggles, target-screen CSS/JS, postbox hide/collapse behavior, and footer filters.
 - `WpAdminComponents`: shared visual primitives such as cards, subcards, buttons, pills, tooltips, collapsible sections, color controls, font-family controls, and scoped CSS override editors and references.
 - `WpAdminAjax`: WordPress admin-AJAX nonce, capability, request parsing, action registration, and handler guards.
@@ -177,14 +184,18 @@ Before adding implementations in another Codex or Claude chat, read:
 - `docs/implementation-checklist.md`
 - `docs/new-plugin-master-checklist.md`
 - `docs/content-cleanup.md`
+- `docs/content-types.md`
 - `docs/database-cleanup.md`
+- `docs/entity-sources.md`
 - `docs/object-cache.md`
 - `docs/site-structure.md`
 - `docs/schema-detection.md`
+- `docs/schema-tools.md`
 - `docs/search-display.md`
 - `docs/search-query.md`
 - `docs/field-structures.md`
 - `docs/faq-sets.md`
+- `docs/taxonomies.md`
 - `docs/brand-colors.md`
 - `docs/brand-profiles.md`
 - `docs/frontend-forms.md`

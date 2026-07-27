@@ -40,7 +40,7 @@ final class Plugin {
         self::$booted = true;
         OrganizationFields::register_hooks();
         LegacyFieldMigrator::register();
-        SchemaInjector::register();
+        SchemaInjector::register_filters();
         RestController::register();
         ShortcodeRegistrar::register();
         self::register_cache_invalidation();

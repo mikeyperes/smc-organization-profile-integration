@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.3
+
+- Consumed the optional HWS canonical Organization and post-bound author source.
+- Delegated schema document injection and shared settings infrastructure to Hexa WP Core.
+- Updated the vendored Hexa WordPress Plugin Core to 0.19.78.
+- Consolidated ownership, installation, requirements, testing, support, and license documentation.
+
 ## 1.0.2
 
 - Replaced the handwritten admin tabs with the current grouped Hexa Core sidebar and AJAX panel loading.

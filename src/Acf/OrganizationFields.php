@@ -9,23 +9,11 @@ defined( 'ABSPATH' ) || exit;
 final class OrganizationFields {
     public const GROUP_KEY = 'group_smc_organization_profile';
 
-    private static bool $registered = false;
-
     /** @var list<array<string,mixed>>|null */
     private static ?array $fields = null;
 
     public static function register_hooks(): void {
-        add_action( 'acf/init', [ self::class, 'register' ], 5 );
         add_filter( 'acf/update_value/name=knowledge_graph_id', [ self::class, 'sanitize_kgid' ], 10, 3 );
-    }
-
-    public static function register(): void {
-        if ( self::$registered || ! function_exists( 'acf_add_local_field_group' ) ) {
-            return;
-        }
-
-        acf_add_local_field_group( self::definition() );
-        self::$registered = true;
     }
 
     /** @return array<string,mixed> */
@@ -241,6 +229,18 @@ final class OrganizationFields {
         ];
 
         return self::$fields;
+    }
+
+    /** @return list<string> */
+    public static function field_labels(): array {
+        $labels = [];
+        foreach ( self::fields() as $field ) {
+            if ( 'tab' === (string) ( $field['type'] ?? '' ) || empty( $field['label'] ) ) {
+                continue;
+            }
+            $labels[] = (string) $field['label'];
+        }
+        return $labels;
     }
 
     public static function sanitize_kgid( mixed $value, mixed $post_id, mixed $field ): mixed {

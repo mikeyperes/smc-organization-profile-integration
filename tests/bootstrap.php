@@ -4,6 +4,23 @@ declare( strict_types=1 );
 
 define( 'ABSPATH', __DIR__ . '/' );
 
+$smc_test_core = dirname( __DIR__ ) . '/lib/hexa-wordpress-plugin-core';
+require_once $smc_test_core . '/bootstrap.php';
+HexaPluginCorePackageRegistry::register_candidate( 'smc-tests', $smc_test_core );
+HexaPluginCorePackageRegistry::resolve();
+
+final class WP_User {
+    /** @param list<string> $roles */
+    public function __construct(
+        public int $ID,
+        public string $display_name,
+        public string $user_email,
+        public string $description,
+        public array $roles = [ 'administrator' ]
+    ) {
+    }
+}
+
 $GLOBALS['smc_test_options'] = [
     'smc_primary_organization_id' => 10,
 ];
@@ -203,9 +220,23 @@ function get_post_meta( int $post_id, string $key, bool $single = false ): mixed
     return $GLOBALS['smc_test_meta'][ $post_id ][ $key ] ?? '';
 }
 
+function get_user_meta( int $user_id, string $key, bool $single = false ): mixed {
+    unset( $single );
+    return $GLOBALS['smc_test_user_meta'][ $user_id ][ $key ] ?? '';
+}
+
 function get_field( string $key, int|string $context ): mixed {
     if ( is_string( $context ) && str_starts_with( $context, 'user_' ) ) {
         return match ( $key ) {
+            'schema_enabled' => 1,
+            'organization_type' => 'Organization',
+            'legal_name' => 'Ada Founder Media LLC',
+            'short_description' => 'An author-led media organization.',
+            'company_description' => '<p>A canonical user-backed Organization.</p>',
+            'url' => 'https://company.test/',
+            'founding_date' => '2021-06-10',
+            'identity_links' => [ [ 'platform' => 'linkedin', 'url' => 'https://www.linkedin.com/in/ada/' ] ],
+            'logo' => 101,
             'urls' => [ 'linkedin' => 'https://www.linkedin.com/in/ada/' ],
             'additional' => [ 'public_email' => 'ada-public@acme.example' ],
             default => null,
@@ -306,10 +337,14 @@ function get_the_post_thumbnail_url( int $post_id, string $size ): string {
     return 'https://company.test/uploads/team-' . $post_id . '.jpg';
 }
 
-function get_userdata( int $user_id ): object|false {
+function get_userdata( int $user_id ): WP_User|false {
     return 1 === $user_id
-        ? (object) [ 'display_name' => 'Ada Founder', 'user_email' => 'ada@acme.example' ]
+        ? new WP_User( 1, 'Ada Founder', 'ada@acme.example', 'Founder and publisher.' )
         : false;
+}
+
+function get_edit_user_link( int $user_id ): string {
+    return 'https://company.test/wp-admin/user-edit.php?user_id=' . $user_id;
 }
 
 function get_author_posts_url( int $user_id ): string {
