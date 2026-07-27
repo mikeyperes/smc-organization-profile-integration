@@ -7,7 +7,7 @@ Canonical Organization fields, schema graphs, REST output, and presentation help
 - Repository: `mikeyperes/smc-organization-profile-integration`
 - Plugin slug: `smc-organization-profile-integration`
 - Namespace: `SMC\OrganizationProfile`
-- Version: `1.0.3`
+- Version: `2.0.0`
 
 ## Ownership
 
@@ -65,7 +65,7 @@ Public field access uses an explicit allowlist.
 
 `initialization.php` is a thin composition root. Namespaced implementation code lives under `src/`; architecture and schema contracts are documented in [docs/architecture.md](docs/architecture.md) and [docs/schema-contract.md](docs/schema-contract.md).
 
-Reusable CPT, entity, ACF settings, dashboard, updater, and schema infrastructure comes from Hexa WP Core 0.19.78.
+Reusable CPT, entity, ACF settings, dashboard, updater, and schema infrastructure comes from Hexa WP Core 1.0.0.
 
 ## Requirements
 
@@ -73,8 +73,8 @@ Reusable CPT, entity, ACF settings, dashboard, updater, and schema infrastructur
 | --- | --- |
 | WordPress | 6.0 |
 | PHP | 8.1 |
-| HWS Base Tools | 10.18.143 |
-| Hexa WP Core bundle | 0.19.78 |
+| HWS Base Tools | 11.0.0 |
+| Hexa WP Core bundle | 1.0.0 |
 
 ACF Pro is required for the Organization field model.
 
@@ -93,6 +93,12 @@ php tests/run.php
 Run `tests/wordpress-integration.php` in a bootstrapped WordPress environment for live hook and REST verification.
 
 ## Changelog
+
+### 2.0.0
+
+- Established the stable major baseline for canonical Organization fields, schema, REST output, and presentation helpers.
+- Updated shared CPT, ACF, entity, schema, updater, rendering, and admin UI infrastructure to Hexa WP Core 1.0.0.
+- Set HWS Base Tools 11.0.0 as the canonical Organization CPT and optional entity-source dependency while preserving existing Organization data.
 
 ### 1.0.3
 

@@ -10,7 +10,7 @@ use HWS\BaseTools\PluginRuntime\PluginMetadata;
 defined( 'ABSPATH' ) || exit;
 
 final class HwsContentTypes {
-    public const MINIMUM_VERSION = '10.18.143';
+    public const MINIMUM_VERSION = '11.0.0';
 
     private const ENABLED_OPTIONS = [
         'smp_enable_cpt_organization',

@@ -42,7 +42,7 @@ $gallery_renderer = $read( $root . '/src/Shortcodes/GalleryRenderer.php' );
 
 preg_match( '/^ \* Version:\s*([^\s]+)/m', $initialization, $header_match );
 preg_match( "/define\( 'SMC_VERSION', '([^']+)' \)/", $initialization, $constant_match );
-$expect( '1.0.3' === ( $header_match[1] ?? '' ), 'plugin header version is 1.0.3' );
+$expect( '2.0.0' === ( $header_match[1] ?? '' ), 'plugin header version is 2.0.0' );
 $expect( ( $header_match[1] ?? '' ) === ( $constant_match[1] ?? '' ), 'plugin header and runtime versions match' );
 $expect( str_contains( $initialization, 'Plugin Name: SMC Organization Profile Integration' ), 'approved plugin name is used' );
 $expect( str_contains( $initialization, 'Text Domain: smc-organization-profile-integration' ), 'approved plugin slug is used' );
@@ -72,7 +72,7 @@ foreach ( $source_files as $file ) {
 $expect( ! str_contains( $all_source, 'register_' . 'post_type' ), 'SMC contains no content-type registration call' );
 $expect( ! str_contains( $fields, 'schema_markup' ), 'ACF model contains no editable schema payload' );
 $expect( str_contains( $field_registry, "'return_format' => 'id'" ), 'media fields store attachment IDs' );
-$expect( str_contains( $dependencies, "public const MINIMUM_VERSION = '10.18.143'" ), 'SMC requires the HWS ownership release' );
+$expect( str_contains( $dependencies, "public const MINIMUM_VERSION = '11.0.0'" ), 'SMC requires the HWS stable ownership release' );
 $expect(
     str_contains( $dependencies, "'smp_enable_cpt_organization'" )
     && str_contains( $dependencies, "'enable_cpt_testimonial'" )
@@ -198,7 +198,7 @@ $expect(
     && str_contains( $gallery_renderer, 'wp_add_inline_style' ),
     'frontend gallery avoids a blocking plugin stylesheet request'
 );
-$expect( '0.19.78' === trim( $read( $root . '/lib/hexa-wordpress-plugin-core/VERSION' ) ), 'plugin bundles Hexa Core 0.19.78' );
+$expect( '1.0.0' === trim( $read( $root . '/lib/hexa-wordpress-plugin-core/VERSION' ) ), 'plugin bundles Hexa Core 1.0.0' );
 $expect( is_file( $root . '/docs/architecture.md' ) && is_file( $root . '/docs/schema-contract.md' ), 'architecture and schema contracts are documented' );
 
 $root_php = array_map( 'basename', glob( $root . '/*.php' ) ?: [] );

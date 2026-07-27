@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.0.0
+
+- Established the stable major contract for Organization fields, schema, REST output, and presentation helpers.
+- Updated the vendored Hexa WordPress Plugin Core to 1.0.0.
+- Set HWS Base Tools 11.0.0 as the canonical shared-CPT and optional entity-source dependency.
+- Preserved existing Organization records, field values, graph identifiers, and public interfaces.
+
 ## 1.0.3
 
 - Consumed the optional HWS canonical Organization and post-bound author source.
