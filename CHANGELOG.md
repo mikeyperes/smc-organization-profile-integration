@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.0.0
+
+- Coordinated major release for the consolidated Organization field, schema, REST, presentation, and HWS dependency infrastructure.
+- Updated the vendored Hexa WordPress Plugin Core to 3.0.0.
+- Set HWS Base Tools 13.0.0 as the canonical shared-CPT and optional entity-source dependency.
+
 ## 2.0.0
 
 - Established the stable major contract for Organization fields, schema, REST output, and presentation helpers.

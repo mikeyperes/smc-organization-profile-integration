@@ -4,6 +4,7 @@ declare( strict_types=1 );
 
 namespace SMC\OrganizationProfile\Schema;
 
+use Hexa\PluginCore\SchemaTools\SchemaDocumentRenderer;
 use SMC\OrganizationProfile\Data\Normalizer;
 use SMC\OrganizationProfile\Data\OrganizationRepository;
 use SMC\OrganizationProfile\Support\Settings;
@@ -67,7 +68,11 @@ final class OrganizationGraph {
             ],
         ];
 
-        return apply_filters( 'smc_organization_schema_graph', $graph, $organization_id, $page_id );
+        $filtered = apply_filters( 'smc_organization_schema_graph', $graph, $organization_id, $page_id );
+
+        return is_array( $filtered )
+            ? ( new SchemaDocumentRenderer() )->normalize( $filtered )
+            : [];
     }
 
     private static function page_type( int $organization_id, int $page_id ): string {

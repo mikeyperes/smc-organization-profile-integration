@@ -5,6 +5,7 @@ declare( strict_types=1 );
 namespace SMC\OrganizationProfile\ContentTypes;
 
 use Hexa\PluginCore\ContentTypes\ContentTypeRegistry;
+use Hexa\PluginCore\CoreContracts\PluginContextInterface;
 use SMC\OrganizationProfile\Acf\OrganizationFields;
 
 defined( 'ABSPATH' ) || exit;
@@ -12,7 +13,7 @@ defined( 'ABSPATH' ) || exit;
 final class OrganizationContentType {
     private static ?ContentTypeRegistry $registry = null;
 
-    public static function registry(): ContentTypeRegistry {
+    public static function registry( ?PluginContextInterface $context = null ): ContentTypeRegistry {
         if ( self::$registry instanceof ContentTypeRegistry ) {
             return self::$registry;
         }
@@ -20,7 +21,7 @@ final class OrganizationContentType {
         self::$registry = new ContentTypeRegistry(
             [
                 'option_name'   => 'smc_content_type_settings',
-                'capability'    => 'manage_options',
+                'capability'    => null !== $context ? (string) $context->get( 'capability', 'manage_options' ) : 'manage_options',
                 'ajax_action'   => 'smc_save_content_type',
                 'nonce_action'  => 'smc_content_types',
                 'nonce_field'   => 'nonce',

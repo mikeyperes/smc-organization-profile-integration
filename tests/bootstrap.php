@@ -4,6 +4,9 @@ declare( strict_types=1 );
 
 define( 'ABSPATH', __DIR__ . '/' );
 
+defined( 'SMC_VERSION' ) || define( 'SMC_VERSION', '3.0.0' );
+defined( 'SMC_PLUGIN_DIR' ) || define( 'SMC_PLUGIN_DIR', dirname( __DIR__ ) . '/' );
+
 $smc_test_core = dirname( __DIR__ ) . '/lib/hexa-wordpress-plugin-core';
 require_once $smc_test_core . '/bootstrap.php';
 HexaPluginCorePackageRegistry::register_candidate( 'smc-tests', $smc_test_core );
@@ -24,6 +27,7 @@ final class WP_User {
 $GLOBALS['smc_test_options'] = [
     'smc_primary_organization_id' => 10,
 ];
+$GLOBALS['smc_test_queried_object_id'] = 10;
 
 $GLOBALS['smc_test_posts'] = [
     10 => [
@@ -45,6 +49,16 @@ $GLOBALS['smc_test_posts'] = [
         'date' => '2020-02-03 10:00:00',
         'modified' => '2026-07-25 12:00:00',
         'url' => 'https://company.test/team-member/ada-founder/',
+    ],
+    11 => [
+        'type' => 'organization',
+        'status' => 'publish',
+        'title' => 'Beta Research',
+        'excerpt' => 'A secondary organization.',
+        'content' => '',
+        'date' => '2021-01-01 10:00:00',
+        'modified' => '2026-07-25 12:00:00',
+        'url' => 'https://company.test/organization/beta-research/',
     ],
     30 => [
         'type' => 'testimonial',
@@ -140,6 +154,13 @@ $GLOBALS['smc_test_meta'] = [
     ],
     20 => [
         'position' => 'Founder and CEO',
+    ],
+    11 => [
+        'schema_enabled' => 1,
+        'organization_type' => 'Organization',
+        'legal_name' => 'Beta Research LLC',
+        'short_description' => 'A secondary organization.',
+        'url' => 'https://beta.example/',
     ],
     30 => [
         'Headline' => 'Excellent research partner',
@@ -246,6 +267,7 @@ function get_field( string $key, int|string $context ): mixed {
 }
 
 function shortcode_atts( array $defaults, array $attributes, string $shortcode = '' ): array {
+    $GLOBALS['smc_test_shortcode_atts_tag'] = $shortcode;
     return array_merge( $defaults, array_intersect_key( $attributes, $defaults ) );
 }
 
@@ -290,7 +312,7 @@ function wp_json_encode( mixed $value, int $flags = 0 ): string|false {
 }
 
 function get_queried_object_id(): int {
-    return 10;
+    return (int) ( $GLOBALS['smc_test_queried_object_id'] ?? 10 );
 }
 
 function is_admin(): bool {
@@ -313,12 +335,38 @@ function is_page(): bool {
     return false;
 }
 
-function wp_enqueue_style( string $handle, string $source, array $dependencies = [], string|bool|null $version = false ): void {
+function wp_register_style( string $handle, mixed $source = false, array $dependencies = [], string|bool|null $version = false ): bool {
+    unset( $source, $dependencies, $version );
+    $GLOBALS['smc_test_styles'][ $handle ] = '';
+    return true;
+}
+
+function wp_enqueue_style( string $handle, string $source = '', array $dependencies = [], string|bool|null $version = false ): void {
+    unset( $source, $dependencies, $version );
+    $GLOBALS['smc_test_styles'][ $handle ] ??= '';
+}
+
+function wp_add_inline_style( string $handle, string $css ): bool {
+    $GLOBALS['smc_test_styles'][ $handle ] = ( $GLOBALS['smc_test_styles'][ $handle ] ?? '' ) . $css;
+    return true;
 }
 
 function wp_get_attachment_image_src( int $id, string $size ): array {
     $suffix = 'full' === $size ? 'full' : $size;
     return [ 'https://company.test/uploads/' . $id . '-' . $suffix . '.jpg', 1200, 900, true ];
+}
+
+/** @param array<string,mixed> $attributes */
+function wp_get_attachment_image( int $id, string $size, bool $icon = false, array $attributes = [] ): string {
+    unset( $icon );
+    $src = wp_get_attachment_image_src( $id, $size );
+    return '<img src="' . esc_url( $src[0] ) . '" class="' . esc_attr( $attributes['class'] ?? '' )
+        . '" alt="' . esc_attr( $attributes['alt'] ?? '' ) . '">';
+}
+
+/** @param array<string,mixed> $defaults @return array<string,mixed> */
+function wp_parse_args( mixed $args, array $defaults = [] ): array {
+    return array_merge( $defaults, is_array( $args ) ? $args : [] );
 }
 
 function wp_get_attachment_caption( int $id ): string {

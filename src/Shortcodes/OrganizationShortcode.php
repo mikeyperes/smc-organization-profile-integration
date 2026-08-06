@@ -8,6 +8,7 @@ use Hexa\PluginCore\SchemaTools\SchemaDocumentRenderer;
 use SMC\OrganizationProfile\Data\Normalizer;
 use SMC\OrganizationProfile\Data\OrganizationData;
 use SMC\OrganizationProfile\Data\OrganizationRepository;
+use SMC\OrganizationProfile\Presentation\OrganizationProfileRenderer;
 use SMC\OrganizationProfile\Schema\OrganizationGraph;
 use SMC\OrganizationProfile\Schema\OrganizationSchema;
 
@@ -95,11 +96,13 @@ final class OrganizationShortcode {
     ];
 
     /** @param array<string,mixed>|string $attributes */
-    public static function render( array|string $attributes = [] ): string {
+    public static function render( array|string $attributes = [], ?string $content = null, string $tag = 'smc_organization' ): string {
+        unset( $content );
+        $tag = 'organization' === $tag ? 'organization' : 'smc_organization';
         $attributes = shortcode_atts(
             [
                 'id'      => 0,
-                'field'   => 'name',
+                'field'   => 'organization' === $tag ? '' : 'name',
                 'format'  => 'html',
                 'link'    => 'false',
                 'target'  => '',
@@ -107,14 +110,22 @@ final class OrganizationShortcode {
                 'columns' => 3,
                 'pretty'  => 'false',
                 'action'  => '',
+                'show_title' => 'true',
+                'show_logo'  => 'true',
+                'heading'    => 'h1',
             ],
             is_array( $attributes ) ? $attributes : [],
-            'smc_organization'
+            $tag
         );
 
-        $data = OrganizationRepository::data( absint( $attributes['id'] ) );
+        $organization_id = OrganizationRepository::resolve_id( $attributes['id'] );
+        $data = $organization_id > 0 ? OrganizationRepository::data( $organization_id ) : null;
         if ( ! $data ) {
             return '';
+        }
+
+        if ( 'display_profile' === $attributes['action'] ) {
+            return OrganizationProfileRenderer::render( $data, $attributes );
         }
 
         $field = sanitize_key( (string) $attributes['field'] );
@@ -158,7 +169,8 @@ final class OrganizationShortcode {
             'smc_organization_gallery'
         );
 
-        $data = OrganizationRepository::data( absint( $attributes['id'] ) );
+        $organization_id = OrganizationRepository::resolve_id( $attributes['id'] );
+        $data = $organization_id > 0 ? OrganizationRepository::data( $organization_id ) : null;
         if ( ! $data ) {
             return '';
         }
@@ -183,7 +195,8 @@ final class OrganizationShortcode {
             'smc_organization_schema'
         );
 
-        $data = OrganizationRepository::data( absint( $attributes['id'] ) );
+        $organization_id = OrganizationRepository::resolve_id( $attributes['id'] );
+        $data = $organization_id > 0 ? OrganizationRepository::data( $organization_id ) : null;
         if ( ! $data ) {
             return '';
         }

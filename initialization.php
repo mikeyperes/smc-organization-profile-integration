@@ -3,7 +3,7 @@
  * Plugin Name: SMC Organization Profile Integration
  * Plugin URI: https://github.com/mikeyperes/smc-organization-profile-integration
  * Description: Organization fields, schema graphs, REST output, and presentation helpers for HWS-managed company websites.
- * Version: 2.0.0
+ * Version: 3.0.0
  * Author: Michael Peres
  * Author URI: https://michaelperes.com
  * Text Domain: smc-organization-profile-integration
@@ -22,7 +22,7 @@ namespace SMC\OrganizationProfile;
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'SMC_VERSION', '2.0.0' );
+define( 'SMC_VERSION', '3.0.0' );
 define( 'SMC_PLUGIN_FILE', __FILE__ );
 define( 'SMC_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'SMC_PLUGIN_URL', plugin_dir_url( __FILE__ ) );

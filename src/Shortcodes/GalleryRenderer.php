@@ -6,6 +6,7 @@ namespace SMC\OrganizationProfile\Shortcodes;
 
 use SMC\OrganizationProfile\Data\Normalizer;
 use SMC\OrganizationProfile\Data\OrganizationData;
+use SMC\OrganizationProfile\Presentation\FrontendAssets;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -16,7 +17,7 @@ final class GalleryRenderer {
             return '';
         }
 
-        self::enqueue_assets();
+        FrontendAssets::enqueue();
 
         $columns = max( 1, min( 6, $columns ) );
         $html = sprintf(
@@ -53,20 +54,4 @@ final class GalleryRenderer {
         return $html . '</div>';
     }
 
-    private static function enqueue_assets(): void {
-        static $enqueued = false;
-
-        if ( $enqueued ) {
-            return;
-        }
-
-        $enqueued = true;
-        wp_register_style( 'smc-organization-profile', false, [], SMC_VERSION );
-        wp_enqueue_style( 'smc-organization-profile' );
-
-        $path = SMC_PLUGIN_DIR . 'assets/frontend.css';
-        if ( is_readable( $path ) ) {
-            wp_add_inline_style( 'smc-organization-profile', (string) file_get_contents( $path ) );
-        }
-    }
 }

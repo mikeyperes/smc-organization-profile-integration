@@ -4,50 +4,43 @@ declare( strict_types=1 );
 
 namespace SMC\OrganizationProfile\Data;
 
+use Hexa\PluginCore\DataNormalization\FieldReader as CoreFieldReader;
+
 defined( 'ABSPATH' ) || exit;
 
+/** Backward-compatible SMC facade for Core's cached ACF-first field reader. */
 final class FieldReader {
-    /** @var array<string,mixed> */
-    private array $cache = [];
+    private readonly CoreFieldReader $reader;
 
-    public function __construct( private readonly int $object_id, private readonly string $kind = 'post' ) {
+    public function __construct( int $object_id, string $kind = 'post' ) {
+        $this->reader = new CoreFieldReader( $object_id, $kind );
     }
 
     public function post_id(): int {
-        return $this->object_id;
+        return $this->reader->post_id();
+    }
+
+    public function object_id(): int {
+        return $this->reader->object_id();
+    }
+
+    public function kind(): string {
+        return $this->reader->kind();
     }
 
     public function context(): string|int {
-        return 'user' === $this->kind ? 'user_' . $this->object_id : $this->object_id;
+        return $this->reader->context();
     }
 
     public function first( string ...$names ): mixed {
-        foreach ( $names as $name ) {
-            $value = $this->read( $name );
-            if ( Normalizer::present( $value ) ) {
-                return $value;
-            }
-        }
-
-        return null;
+        return $this->reader->first( ...$names );
     }
 
     public function read( string $name ): mixed {
-        if ( array_key_exists( $name, $this->cache ) ) {
-            return $this->cache[ $name ];
-        }
+        return $this->reader->read( $name );
+    }
 
-        if ( function_exists( 'get_field' ) ) {
-            $value = get_field( $name, $this->context() );
-            if ( Normalizer::present( $value ) ) {
-                $this->cache[ $name ] = $value;
-                return $this->cache[ $name ];
-            }
-        }
-
-        $this->cache[ $name ] = 'user' === $this->kind
-            ? get_user_meta( $this->object_id, $name, true )
-            : get_post_meta( $this->object_id, $name, true );
-        return $this->cache[ $name ];
+    public function clear_cache( ?string $name = null ): void {
+        $this->reader->clear_cache( $name );
     }
 }

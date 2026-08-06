@@ -20,6 +20,8 @@ foreach (
         'src/Schema/OrganizationSchema.php',
         'src/Schema/OrganizationGraph.php',
         'src/Schema/SchemaInjector.php',
+        'src/Presentation/FrontendAssets.php',
+        'src/Presentation/OrganizationProfileRenderer.php',
         'src/Shortcodes/GalleryRenderer.php',
         'src/Shortcodes/OrganizationShortcode.php',
     ] as $file
@@ -181,6 +183,23 @@ $expect(
     'acme.example' === OrganizationShortcode::render( [ 'id' => 10, 'field' => 'url', 'pretty' => 'true' ] ),
     'pretty URL formatting remains compatible'
 );
+$GLOBALS['smc_test_queried_object_id'] = 11;
+OrganizationRepository::clear_cache();
+$expect(
+    'Beta Research' === OrganizationShortcode::render( [ 'field' => 'name' ], null, 'organization' ),
+    'legacy Organization shortcode resolves the current non-primary Organization single'
+);
+$expect(
+    'organization' === ( $GLOBALS['smc_test_shortcode_atts_tag'] ?? '' )
+        && '' === OrganizationShortcode::render( [], null, 'organization' ),
+    'legacy Organization shortcode retains its tag-specific attribute filter and empty-field default'
+);
+$expect(
+    '' === OrganizationShortcode::render( [ 'id' => 999, 'field' => 'name' ], null, 'organization' ),
+    'an invalid explicit legacy Organization ID never falls back to the primary record'
+);
+$GLOBALS['smc_test_queried_object_id'] = 10;
+OrganizationRepository::clear_cache();
 $expect(
     'Research Award' === OrganizationShortcode::render( [ 'id' => 10, 'field' => 'awards' ] ),
     'legacy award shortcode reads canonical repeater rows'
@@ -188,6 +207,17 @@ $expect(
 $expect(
     str_contains( OrganizationShortcode::render( [ 'id' => 10, 'field' => 'company_info' ] ), '<p>' ),
     'legacy company information preserves allowed HTML'
+);
+$profile = OrganizationShortcode::render( [ 'id' => 10, 'action' => 'display_profile' ] );
+$expect(
+    str_contains( $profile, 'smc-organization-profile' )
+        && str_contains( $profile, 'Acme Research' )
+        && str_contains( $profile, '<p>Acme serves technical teams.</p>' ),
+    'SMC renders the migrated complete Organization profile from canonical data'
+);
+$expect(
+    str_contains( $GLOBALS['smc_test_styles']['smc-organization-profile'] ?? '', '.smc-organization-profile' ),
+    'complete Organization profile loads the SMC-owned inline stylesheet'
 );
 $GLOBALS['smc_test_meta'][10]['sub_title'] = $GLOBALS['smc_test_meta'][10]['slogan'];
 unset( $GLOBALS['smc_test_meta'][10]['slogan'] );

@@ -17,6 +17,22 @@ final class OrganizationRepository {
     /** @var array<int,OrganizationData|null> */
     private static array $data = [];
 
+    public static function resolve_id( mixed $requested_id = 0 ): int {
+        if ( is_numeric( $requested_id ) && absint( $requested_id ) > 0 ) {
+            $requested_id = absint( $requested_id );
+            return self::data( $requested_id ) ? $requested_id : 0;
+        }
+
+        if ( function_exists( 'is_singular' ) && is_singular( 'organization' ) ) {
+            $queried_id = absint( get_queried_object_id() );
+            if ( self::is_organization( $queried_id ) ) {
+                return $queried_id;
+            }
+        }
+
+        return self::primary_id();
+    }
+
     public static function primary_id(): int {
         if ( null !== self::$primary_id ) {
             return self::$primary_id;

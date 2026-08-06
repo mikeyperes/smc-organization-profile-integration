@@ -37,12 +37,18 @@ $migrator = $read( $root . '/src/Migration/LegacyFieldMigrator.php' );
 $admin = $read( $root . '/src/Admin/AdminPage.php' );
 $field_reader = $read( $root . '/src/Data/FieldReader.php' );
 $media_normalizer = $read( $root . '/src/Data/MediaNormalizer.php' );
+$core_media_normalizer = $read( $root . '/lib/hexa-wordpress-plugin-core/src/DataNormalization/MediaNormalizer.php' );
+$normalizer = $read( $root . '/src/Data/Normalizer.php' );
 $repository = $read( $root . '/src/Data/OrganizationRepository.php' );
 $gallery_renderer = $read( $root . '/src/Shortcodes/GalleryRenderer.php' );
+$frontend_assets = $read( $root . '/src/Presentation/FrontendAssets.php' );
+$profile_renderer = $read( $root . '/src/Presentation/OrganizationProfileRenderer.php' );
+$compatibility_adapter = $read( $root . '/src/Compatibility/SfpfOrganizationAdapter.php' );
+$core_integration = $read( $root . '/src/Core/CoreIntegration.php' );
 
 preg_match( '/^ \* Version:\s*([^\s]+)/m', $initialization, $header_match );
 preg_match( "/define\( 'SMC_VERSION', '([^']+)' \)/", $initialization, $constant_match );
-$expect( '2.0.0' === ( $header_match[1] ?? '' ), 'plugin header version is 2.0.0' );
+$expect( '3.0.0' === ( $header_match[1] ?? '' ), 'plugin header version is 3.0.0' );
 $expect( ( $header_match[1] ?? '' ) === ( $constant_match[1] ?? '' ), 'plugin header and runtime versions match' );
 $expect( str_contains( $initialization, 'Plugin Name: SMC Organization Profile Integration' ), 'approved plugin name is used' );
 $expect( str_contains( $initialization, 'Text Domain: smc-organization-profile-integration' ), 'approved plugin slug is used' );
@@ -72,7 +78,7 @@ foreach ( $source_files as $file ) {
 $expect( ! str_contains( $all_source, 'register_' . 'post_type' ), 'SMC contains no content-type registration call' );
 $expect( ! str_contains( $fields, 'schema_markup' ), 'ACF model contains no editable schema payload' );
 $expect( str_contains( $field_registry, "'return_format' => 'id'" ), 'media fields store attachment IDs' );
-$expect( str_contains( $dependencies, "public const MINIMUM_VERSION = '11.0.0'" ), 'SMC requires the HWS stable ownership release' );
+$expect( str_contains( $dependencies, "public const MINIMUM_VERSION = '13.0.0'" ), 'SMC requires the HWS stable ownership release' );
 $expect(
     str_contains( $dependencies, "'smp_enable_cpt_organization'" )
     && str_contains( $dependencies, "'enable_cpt_testimonial'" )
@@ -133,7 +139,7 @@ $expect(
     'press is subjectOf while sameAs comes only from identity links'
 );
 foreach ( [ 'foundingLocation', 'contactPoint', 'numberOfEmployees', 'makesOffer', 'hasCredential', 'aggregateRating', 'ImageObject' ] as $property ) {
-    $haystack = 'ImageObject' === $property ? $read( $root . '/src/Data/MediaNormalizer.php' ) : $schema;
+    $haystack = 'ImageObject' === $property ? $core_media_normalizer : $schema;
     $expect( str_contains( $haystack, $property ), "schema supports {$property}" );
 }
 $expect(
@@ -142,7 +148,6 @@ $expect(
     && str_contains( $graph, "'ProfilePage'" ),
     'graph supports website and page nodes'
 );
-$core_integration = $read( $root . '/src/Core/CoreIntegration.php' );
 $expect(
     str_contains( $core_integration, 'new CoreSchemaInjector' )
     && str_contains( $injector, "add_filter( 'rank_math/json_ld'" )
@@ -158,10 +163,18 @@ foreach ( [ 'smc_organization', 'smc_organization_gallery', 'smc_organization_sc
     $expect( str_contains( $registrar, "'{$tag}'" ), "shortcode is registered: {$tag}" );
 }
 $expect( str_contains( $shortcode, 'PUBLIC_FIELDS' ), 'field shortcode uses a public allowlist' );
+$expect(
+    str_contains( $repository, 'public static function resolve_id' )
+    && str_contains( $shortcode, "'organization' === \$tag" ),
+    'canonical shortcode resolution preserves current-record and legacy-tag semantics'
+);
 $expect( str_contains( $migrator, 'copy_if_empty' ) && str_contains( $migrator, '_smc_migration_version' ), 'legacy migration is idempotent and non-overwriting' );
 $expect( str_contains( $admin, "check_admin_referer( 'smc_save_settings' )" ), 'admin settings require a nonce' );
 $expect(
     str_contains( $admin, 'HostTabsRenderer' )
+    && str_contains( $admin, 'TabRegistry' )
+    && str_contains( $admin, 'TabDefinition' )
+    && str_contains( $admin, 'FieldStructureRenderer' )
     && 1 === preg_match( "/'layout'\\s*=>\\s*'sidebar'/", $admin )
     && str_contains( $admin, "'groups'" )
     && str_contains( $admin, 'sidebar_identity' )
@@ -180,11 +193,13 @@ $expect(
     'admin delegates canonical entity selection to HWS Base Tools'
 );
 $expect(
-    str_contains( $field_reader, 'private array $cache' )
-    && str_contains( $media_normalizer, 'private static array $image_cache' )
+    str_contains( $field_reader, 'CoreFieldReader' )
+    && ! str_contains( $field_reader, 'private array $cache' )
+    && str_contains( $media_normalizer, 'CoreMediaNormalizer' )
+    && str_contains( $normalizer, 'ValueNormalizer' )
     && str_contains( $repository, 'private static array $data' )
     && str_contains( $schema, 'private static array $bundle_cache' ),
-    'normalized fields, media, repositories, and schema use request caches'
+    'generic normalization delegates to Core while domain repositories and schema retain request caches'
 );
 $expect(
     ! str_contains( $dependencies, "add_action( 'init', [ self::class, 'ensure_registered' ]" )
@@ -194,12 +209,65 @@ $expect(
     'runtime avoids repeated setup and invalidates request caches after writes'
 );
 $expect(
-    str_contains( $gallery_renderer, "wp_register_style( 'smc-organization-profile', false" )
-    && str_contains( $gallery_renderer, 'wp_add_inline_style' ),
-    'frontend gallery avoids a blocking plugin stylesheet request'
+    str_contains( $gallery_renderer, 'FrontendAssets::enqueue()' )
+    && str_contains( $frontend_assets, "wp_register_style( 'smc-organization-profile', false" )
+    && str_contains( $frontend_assets, 'wp_add_inline_style' )
+    && str_contains( $frontend_assets, "is_singular( 'organization' )" )
+    && str_contains( $plugin, 'FrontendAssets::register()' ),
+    'shared frontend presentation preserves Organization-page loading without a blocking stylesheet request'
 );
-$expect( '1.0.0' === trim( $read( $root . '/lib/hexa-wordpress-plugin-core/VERSION' ) ), 'plugin bundles Hexa Core 1.0.0' );
+$expect( '3.0.0' === trim( $read( $root . '/lib/hexa-wordpress-plugin-core/VERSION' ) ), 'bundled Core is synchronized to canonical 3.0.0' );
 $expect( is_file( $root . '/docs/architecture.md' ) && is_file( $root . '/docs/schema-contract.md' ), 'architecture and schema contracts are documented' );
+
+// Architecture regressions: SMC owns Organization behavior; generic mechanics stay in Core.
+$expect(
+    str_contains( $field_registry, 'AcfFieldFactory' )
+    && ! str_contains( $field_registry, 'private static function field(' ),
+    'SMC retains only its ACF key policy and delegates generic field construction to Core'
+);
+$expect(
+    str_contains( $dependencies, 'PluginRecommendationRegistry' )
+    && str_contains( $dependencies, 'PluginCheckService' ),
+    'dependency discovery and status use the Core plugin-check contracts'
+);
+$expect(
+    str_contains( $registrar, 'ShortcodeRegistry' )
+    && str_contains( $registrar, 'ShortcodeDefinition' ),
+    'shortcode documentation is described through the Core registry'
+);
+$expect(
+    str_contains( $graph, 'SchemaDocumentRenderer' )
+    && str_contains( $graph, '->normalize(' ),
+    'all Organization graph consumers receive Core-normalized and deduplicated documents'
+);
+$expect(
+    str_contains( $profile_renderer, 'final class OrganizationProfileRenderer' )
+    && str_contains( $profile_renderer, 'smc-organization-profile' )
+    && str_contains( $shortcode, "'display_profile'" )
+    && str_contains( $shortcode, 'OrganizationProfileRenderer::render' ),
+    'SMC owns the complete Organization profile presentation path'
+);
+$expect(
+    str_contains( $compatibility_adapter, 'Read-only compatibility contract' )
+    && ! str_contains( $compatibility_adapter, 'update_' . 'option' )
+    && ! str_contains( $compatibility_adapter, 'update_' . 'post_meta' ),
+    'the historical SFPF Organization adapter is read-only'
+);
+$expect(
+    str_contains( $registrar, "add_shortcode( 'organization'" )
+    && ! str_contains( $profile_renderer, 'add_shortcode(' ),
+    'SMC is the sole host owner of the legacy Organization shortcode alias'
+);
+$expect(
+    str_contains( $core_integration, 'PluginContext' )
+    && str_contains( $core_integration, 'OrganizationContentType::registry( $context )' ),
+    'SMC passes its Core plugin context into the domain content-type registry'
+);
+$expect(
+    str_contains( $read( $root . '/assets/frontend.css' ), '.smc-organization-profile' )
+    && ! str_contains( $read( $root . '/assets/frontend.css' ), '.sfpf-organization-profile' ),
+    'SMC owns Organization profile styling without an SFPF stylesheet dependency'
+);
 
 $root_php = array_map( 'basename', glob( $root . '/*.php' ) ?: [] );
 sort( $root_php );

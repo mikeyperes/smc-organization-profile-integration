@@ -4,200 +4,148 @@ declare( strict_types=1 );
 
 namespace SMC\OrganizationProfile\Acf;
 
+use Hexa\PluginCore\AcfFieldFactory\AcfFieldFactory;
+
 defined( 'ABSPATH' ) || exit;
 
+/**
+ * SMC key-policy adapter for the generic Core ACF field factory.
+ *
+ * Callers retain the established compact SMC signature while Core owns field
+ * construction and type defaults.
+ */
 final class FieldRegistry {
-    /** @param array<string,mixed> $options */
     public static function text( string $id, string $label, string $name, array $options = [] ): array {
-        return self::field( $id, $label, $name, 'text', $options );
+        return AcfFieldFactory::text( self::args( $id, $label, $name, $options ) );
     }
 
-    /** @param array<string,mixed> $options */
     public static function textarea( string $id, string $label, string $name, array $options = [] ): array {
-        return self::field( $id, $label, $name, 'textarea', array_replace( [ 'rows' => 4 ], $options ) );
+        return AcfFieldFactory::textarea( self::args( $id, $label, $name, array_replace( [ 'rows' => 4 ], $options ) ) );
     }
 
-    /** @param array<string,mixed> $options */
     public static function wysiwyg( string $id, string $label, string $name, array $options = [] ): array {
-        return self::field(
-            $id,
-            $label,
-            $name,
-            'wysiwyg',
-            array_replace( [ 'tabs' => 'all', 'toolbar' => 'full', 'media_upload' => 0, 'delay' => 1 ], $options )
+        return AcfFieldFactory::wysiwyg(
+            self::args( $id, $label, $name, array_replace( [ 'tabs' => 'all', 'toolbar' => 'full', 'media_upload' => 0, 'delay' => 1 ], $options ) )
         );
     }
 
-    /** @param array<string,mixed> $options */
     public static function url( string $id, string $label, string $name, array $options = [] ): array {
-        return self::field( $id, $label, $name, 'url', $options );
+        return AcfFieldFactory::url( self::args( $id, $label, $name, $options ) );
     }
 
-    /** @param array<string,mixed> $options */
     public static function email( string $id, string $label, string $name, array $options = [] ): array {
-        return self::field( $id, $label, $name, 'email', $options );
+        return AcfFieldFactory::email( self::args( $id, $label, $name, $options ) );
     }
 
-    /** @param array<string,mixed> $options */
     public static function number( string $id, string $label, string $name, array $options = [] ): array {
-        return self::field( $id, $label, $name, 'number', $options );
+        return AcfFieldFactory::number( self::args( $id, $label, $name, $options ) );
     }
 
-    /** @param array<string,mixed> $options */
     public static function date( string $id, string $label, string $name, array $options = [] ): array {
-        return self::field(
-            $id,
-            $label,
-            $name,
-            'date_picker',
-            array_replace( [ 'display_format' => 'F j, Y', 'return_format' => 'Y-m-d', 'first_day' => 1 ], $options )
+        return AcfFieldFactory::date(
+            self::args( $id, $label, $name, array_replace( [ 'display_format' => 'F j, Y', 'return_format' => 'Y-m-d', 'first_day' => 1 ], $options ) )
         );
     }
 
-    /** @param array<string,string> $choices @param array<string,mixed> $options */
     public static function select( string $id, string $label, string $name, array $choices, array $options = [] ): array {
-        return self::field(
-            $id,
-            $label,
-            $name,
-            'select',
-            array_replace( [ 'choices' => $choices, 'allow_null' => 1, 'ui' => 1, 'return_format' => 'value' ], $options )
+        return AcfFieldFactory::select(
+            self::args( $id, $label, $name, array_replace( [ 'choices' => $choices, 'allow_null' => 1, 'ui' => 1, 'return_format' => 'value' ], $options ) )
         );
     }
 
-    /** @param array<string,mixed> $options */
     public static function toggle( string $id, string $label, string $name, array $options = [] ): array {
-        return self::field(
-            $id,
-            $label,
-            $name,
-            'true_false',
-            array_replace( [ 'ui' => 1, 'default_value' => 1 ], $options )
+        return AcfFieldFactory::toggle(
+            self::args( $id, $label, $name, array_replace( [ 'ui' => 1, 'default_value' => 1 ], $options ) )
         );
     }
 
-    /** @param array<string,mixed> $options */
     public static function image( string $id, string $label, string $name, array $options = [] ): array {
-        return self::field(
-            $id,
-            $label,
-            $name,
-            'image',
-            array_replace( [ 'return_format' => 'id', 'preview_size' => 'medium', 'library' => 'all' ], $options )
+        return AcfFieldFactory::image(
+            self::args( $id, $label, $name, array_replace( [ 'return_format' => 'id', 'preview_size' => 'medium', 'library' => 'all' ], $options ) )
         );
     }
 
-    /** @param array<string,mixed> $options */
     public static function gallery( string $id, string $label, string $name, array $options = [] ): array {
-        return self::field(
-            $id,
-            $label,
-            $name,
-            'gallery',
-            array_replace(
-                [
-                    'return_format' => 'id',
-                    'preview_size'  => 'thumbnail',
-                    'library'       => 'all',
-                    'insert'        => 'append',
-                    'mime_types'    => 'jpg,jpeg,png,webp,avif',
-                ],
-                $options
+        return AcfFieldFactory::gallery(
+            self::args(
+                $id,
+                $label,
+                $name,
+                array_replace(
+                    [
+                        'return_format' => 'id',
+                        'preview_size'  => 'thumbnail',
+                        'library'       => 'all',
+                        'insert'        => 'append',
+                        'mime_types'    => 'jpg,jpeg,png,webp,avif',
+                    ],
+                    $options
+                )
             )
         );
     }
 
-    /** @param array<int,array<string,mixed>> $sub_fields @param array<string,mixed> $options */
     public static function group( string $id, string $label, string $name, array $sub_fields, array $options = [] ): array {
-        return self::field(
-            $id,
-            $label,
-            $name,
-            'group',
-            array_replace( [ 'layout' => 'block', 'sub_fields' => $sub_fields ], $options )
+        return AcfFieldFactory::group(
+            self::args( $id, $label, $name, array_replace( [ 'layout' => 'block', 'sub_fields' => $sub_fields ], $options ) )
         );
     }
 
-    /** @param array<int,array<string,mixed>> $sub_fields @param array<string,mixed> $options */
     public static function repeater( string $id, string $label, string $name, array $sub_fields, array $options = [] ): array {
-        return self::field(
-            $id,
-            $label,
-            $name,
-            'repeater',
-            array_replace(
-                [
-                    'layout'       => 'block',
-                    'button_label' => 'Add Row',
-                    'min'          => 0,
-                    'sub_fields'   => $sub_fields,
-                ],
-                $options
+        return AcfFieldFactory::repeater(
+            self::args(
+                $id,
+                $label,
+                $name,
+                array_replace( [ 'layout' => 'block', 'button_label' => 'Add Row', 'min' => 0, 'sub_fields' => $sub_fields ], $options )
             )
         );
     }
 
-    /** @param list<string> $post_types @param array<string,mixed> $options */
     public static function relationship( string $id, string $label, string $name, array $post_types, array $options = [] ): array {
-        return self::field(
-            $id,
-            $label,
-            $name,
-            'relationship',
-            array_replace(
-                [
-                    'post_type'     => $post_types,
-                    'post_status'   => [ 'publish', 'draft', 'pending', 'private' ],
-                    'filters'       => [ 'search', 'post_type' ],
-                    'return_format' => 'id',
-                    'elements'      => [ 'featured_image' ],
-                ],
-                $options
+        return AcfFieldFactory::relationship(
+            self::args(
+                $id,
+                $label,
+                $name,
+                array_replace(
+                    [
+                        'post_type'     => $post_types,
+                        'post_status'   => [ 'publish', 'draft', 'pending', 'private' ],
+                        'filters'       => [ 'search', 'post_type' ],
+                        'return_format' => 'id',
+                        'elements'      => [ 'featured_image' ],
+                    ],
+                    $options
+                )
             )
         );
     }
 
-    /** @param array<string,mixed> $options */
     public static function user( string $id, string $label, string $name, array $options = [] ): array {
-        return self::field(
-            $id,
-            $label,
-            $name,
-            'user',
-            array_replace(
-                [ 'role' => '', 'allow_null' => 1, 'multiple' => 1, 'return_format' => 'id' ],
-                $options
-            )
+        return AcfFieldFactory::user(
+            self::args( $id, $label, $name, array_replace( [ 'role' => '', 'allow_null' => 1, 'multiple' => 1, 'return_format' => 'id' ], $options ) )
         );
     }
 
     public static function tab( string $id, string $label ): array {
-        return [
-            'key'       => self::key( $id ),
-            'label'     => $label,
-            'name'      => '',
-            'type'      => 'tab',
-            'placement' => 'top',
-            'endpoint'  => 0,
-        ];
+        return AcfFieldFactory::tab(
+            self::args( $id, $label, '', [ 'placement' => 'top', 'endpoint' => 0 ] )
+        );
     }
 
-    /** @param array<string,mixed> $options */
-    private static function field( string $id, string $label, string $name, string $type, array $options ): array {
-        $field = [
-            'key'           => self::key( $id ),
-            'label'         => $label,
-            'name'          => $name,
-            'type'          => $type,
-            'instructions'  => '',
-            'required'      => 0,
-            'wrapper'       => [ 'width' => '', 'class' => '', 'id' => '' ],
-        ];
-
-        return array_replace_recursive( $field, $options );
-    }
-
-    private static function key( string $id ): string {
-        return 'field_smc_org_' . sanitize_key( $id );
+    /** @return array<string,mixed> */
+    private static function args( string $id, string $label, string $name, array $options ): array {
+        return array_replace_recursive(
+            [
+                'key'          => 'field_smc_org_' . sanitize_key( $id ),
+                'label'        => $label,
+                'name'         => $name,
+                'instructions' => '',
+                'required'     => 0,
+                'wrapper'      => [ 'width' => '', 'class' => '', 'id' => '' ],
+            ],
+            $options
+        );
     }
 }

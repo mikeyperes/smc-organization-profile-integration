@@ -6,11 +6,15 @@ namespace SMC\OrganizationProfile\Admin;
 
 use Hexa\PluginCore\ContentTypes\ContentTypeRenderer;
 use Hexa\PluginCore\CoreRuntime\CoreVersion;
+use Hexa\PluginCore\FieldStructures\FieldStructureManager;
+use Hexa\PluginCore\FieldStructures\FieldStructureRenderer;
 use Hexa\PluginCore\SchemaTools\SchemaDocumentRenderer;
 use Hexa\PluginCore\WpAdminAjax\AjaxActionRegistry;
 use Hexa\PluginCore\WpAdminAjax\AjaxFailure;
 use Hexa\PluginCore\WpAdminAjax\AjaxRequest;
 use Hexa\PluginCore\WpAdminTabs\HostTabsRenderer;
+use Hexa\PluginCore\WpAdminTabs\TabDefinition;
+use Hexa\PluginCore\WpAdminTabs\TabRegistry;
 use SMC\OrganizationProfile\Acf\OrganizationFields;
 use SMC\OrganizationProfile\ContentTypes\OrganizationContentType;
 use SMC\OrganizationProfile\Data\OrganizationRepository;
@@ -30,20 +34,13 @@ final class AdminPage {
     private const AJAX_ACTION = 'smc_load_dashboard_tab';
     private const NONCE_ACTION = 'smc_dashboard_tabs';
 
-    private const TABS = [
-        'overview'   => 'Overview',
-        'settings'   => 'Settings',
-        'content-types' => 'Custom Post Types',
-        'fields'     => 'Field Model',
-        'shortcodes' => 'Shortcodes',
-        'schema'     => 'Live Schema',
-    ];
-
     private const GROUPS = [
         [ 'label' => 'Overview', 'tabs' => [ 'overview' ] ],
         [ 'label' => 'Organization', 'tabs' => [ 'settings', 'content-types', 'fields', 'shortcodes', 'schema' ] ],
         [ 'label' => 'System', 'tabs' => [ 'hexa-core' ] ],
     ];
+
+    private static ?TabRegistry $tabRegistry = null;
 
     public static function register(): void {
         add_action( 'admin_menu', [ self::class, 'add_menu' ] );
@@ -179,14 +176,13 @@ final class AdminPage {
             return;
         }
 
-        match ( $tab ) {
-            'settings'   => self::render_settings(),
-            'content-types' => self::render_content_types(),
-            'fields'     => self::render_fields(),
-            'shortcodes' => self::render_shortcodes(),
-            'schema'     => self::render_schema(),
-            default      => self::render_overview(),
-        };
+        $definition = self::tab_registry()->get( $tab );
+        if ( ! $definition instanceof TabDefinition || ! is_callable( $definition->renderer ) ) {
+            echo '<div class="notice notice-warning inline"><p>Dashboard panel not found.</p></div>';
+            return;
+        }
+
+        call_user_func( $definition->renderer );
     }
 
     private static function render_header(): void {
@@ -278,31 +274,28 @@ final class AdminPage {
     }
 
     private static function render_fields(): void {
-        $fields = OrganizationFields::fields();
-        $sections = [];
-        $active = 'General';
-
-        foreach ( $fields as $field ) {
-            if ( 'tab' === ( $field['type'] ?? '' ) ) {
-                $active = (string) $field['label'];
-                $sections[ $active ] = [];
-                continue;
-            }
-            $sections[ $active ][] = $field;
-        }
-
-        echo '<section class="smc-admin__section"><div class="smc-admin__section-heading">';
-        echo '<h2>Organization Field Model</h2><p>' . absint( count( $fields ) ) . ' registered field definitions across ' . absint( count( $sections ) ) . ' sections.</p></div>';
-        foreach ( $sections as $section => $section_fields ) {
-            echo '<h3>' . esc_html( $section ) . '</h3><table class="widefat striped smc-admin__table"><thead><tr><th>Field</th><th>Name</th><th>Type</th></tr></thead><tbody>';
-            foreach ( $section_fields as $field ) {
-                echo '<tr><td>' . esc_html( $field['label'] ?? '' ) . '</td>';
-                echo '<td><code>' . esc_html( $field['name'] ?? '' ) . '</code></td>';
-                echo '<td>' . esc_html( $field['type'] ?? '' ) . '</td></tr>';
-            }
-            echo '</tbody></table>';
-        }
-        echo '</section>';
+        echo ( new FieldStructureRenderer() )->render(
+            [
+                [
+                    'id'            => 'smc-organization-profile',
+                    'label'         => 'SMC Organization Profile',
+                    'type'          => 'acf',
+                    'description'   => 'Canonical Organization identity, footprint, people, commercial, reputation, and media fields.',
+                    'enabled'       => true,
+                    'registered'    => static fn(): bool => FieldStructureManager::acfGroupAvailable( OrganizationFields::GROUP_KEY ),
+                    'acf_group_key' => OrganizationFields::GROUP_KEY,
+                    'object_name'   => 'organization',
+                    'location'      => 'HWS-owned Organization posts',
+                    'fields'        => OrganizationFields::field_labels(),
+                    'dependencies'  => [ 'HWS Base Tools Organization CPT', 'Advanced Custom Fields Pro' ],
+                    'test_report'   => 'The plugin architecture suite verifies stable unique field keys and Core factory delegation.',
+                ],
+            ],
+            [
+                'title'       => 'Organization Field Model',
+                'description' => 'SMC supplies domain definitions while Hexa WordPress Plugin Core owns field construction and structure rendering.',
+            ]
+        );
     }
 
     private static function render_shortcodes(): void {
@@ -375,8 +368,41 @@ final class AdminPage {
 
     /** @return array<string,mixed> */
     private static function tabs(): array {
-        $tabs = apply_filters( 'smc_dashboard_tabs', self::TABS );
-        return is_array( $tabs ) ? $tabs : self::TABS;
+        $tabs = [];
+        foreach ( self::tab_registry()->all() as $tab ) {
+            $tabs[ $tab->id ] = $tab->label;
+        }
+
+        $filtered = apply_filters( 'smc_dashboard_tabs', $tabs );
+        return is_array( $filtered ) ? $filtered : $tabs;
+    }
+
+    private static function tab_registry(): TabRegistry {
+        if ( self::$tabRegistry instanceof TabRegistry ) {
+            return self::$tabRegistry;
+        }
+
+        self::$tabRegistry = new TabRegistry();
+        foreach (
+            [
+                'overview'      => [ 'Overview', 'render_overview' ],
+                'settings'      => [ 'Settings', 'render_settings' ],
+                'content-types' => [ 'Custom Post Types', 'render_content_types' ],
+                'fields'        => [ 'Field Model', 'render_fields' ],
+                'shortcodes'    => [ 'Shortcodes', 'render_shortcodes' ],
+                'schema'        => [ 'Live Schema', 'render_schema' ],
+            ] as $id => [ $label, $renderer ]
+        ) {
+            self::$tabRegistry->add(
+                new TabDefinition(
+                    $id,
+                    $label,
+                    static fn(): mixed => call_user_func( [ self::class, $renderer ] )
+                )
+            );
+        }
+
+        return self::$tabRegistry;
     }
 
     /** @param array<string,mixed> $tabs */

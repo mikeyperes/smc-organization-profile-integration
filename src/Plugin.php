@@ -12,6 +12,7 @@ use SMC\OrganizationProfile\Data\OrganizationRepository;
 use SMC\OrganizationProfile\Dependencies\HwsContentTypes;
 use SMC\OrganizationProfile\Http\RestController;
 use SMC\OrganizationProfile\Migration\LegacyFieldMigrator;
+use SMC\OrganizationProfile\Presentation\FrontendAssets;
 use SMC\OrganizationProfile\Schema\OrganizationSchema;
 use SMC\OrganizationProfile\Schema\SchemaInjector;
 use SMC\OrganizationProfile\Shortcodes\ShortcodeRegistrar;
@@ -29,6 +30,12 @@ final class Plugin {
         }
 
         self::$registered = true;
+
+        if ( did_action( 'plugins_loaded' ) ) {
+            self::boot();
+            return;
+        }
+
         add_action( 'plugins_loaded', [ self::class, 'boot' ], 20 );
     }
 
@@ -37,22 +44,24 @@ final class Plugin {
             return;
         }
 
-        self::$booted = true;
+        CoreIntegration::boot();
+
         OrganizationFields::register_hooks();
         LegacyFieldMigrator::register();
         SchemaInjector::register_filters();
         RestController::register();
         ShortcodeRegistrar::register();
+        FrontendAssets::register();
+        HwsContentTypes::register();
         self::register_cache_invalidation();
 
         if ( is_admin() || wp_doing_ajax() ) {
-            HwsContentTypes::register();
             AdminPage::register();
         }
 
-        CoreIntegration::boot();
+        self::$booted = true;
 
-        do_action( 'smc_organization_profile_booted' );
+        do_action( 'smc_organization_profile_booted', CoreIntegration::context() );
     }
 
     public static function activate(): void {

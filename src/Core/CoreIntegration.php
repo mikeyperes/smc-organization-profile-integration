@@ -19,10 +19,11 @@ defined( 'ABSPATH' ) || exit;
 
 final class CoreIntegration {
     private static ?CoreBootstrap $bootstrap = null;
+    private static ?PluginContext $context = null;
     private static ?UpdaterConfig $updater = null;
 
     public static function boot(): void {
-        if ( self::$bootstrap instanceof CoreBootstrap || ! class_exists( CoreBootstrap::class ) ) {
+        if ( self::$bootstrap instanceof CoreBootstrap || ! self::classes_available() ) {
             return;
         }
 
@@ -45,7 +46,7 @@ final class CoreIntegration {
         $bootstrap
             ->add_module( new GitHubPluginUpdater( $updater ) )
             ->add_module( new UpdaterAjaxController( $updater ) )
-            ->add_module( OrganizationContentType::registry() )
+            ->add_module( OrganizationContentType::registry( $context ) )
             ->add_module(
                 new CoreSchemaInjector(
                     [ SchemaInjector::class, 'schema' ],
@@ -76,8 +77,21 @@ final class CoreIntegration {
         }
 
         $bootstrap->boot();
+        self::$context = $context;
         self::$bootstrap = $bootstrap;
         do_action( 'smc_organization_profile_core_booted', $context, $bootstrap );
+    }
+
+    public static function context(): ?PluginContext {
+        self::boot();
+
+        return self::$context;
+    }
+
+    public static function bootstrap(): ?CoreBootstrap {
+        self::boot();
+
+        return self::$bootstrap;
     }
 
     public static function updater_config(): UpdaterConfig {
@@ -107,5 +121,11 @@ final class CoreIntegration {
         );
 
         return self::$updater;
+    }
+
+    private static function classes_available(): bool {
+        return class_exists( PluginContext::class )
+            && class_exists( CoreBootstrap::class )
+            && class_exists( UpdaterConfig::class );
     }
 }
