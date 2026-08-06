@@ -48,7 +48,7 @@ $core_integration = $read( $root . '/src/Core/CoreIntegration.php' );
 
 preg_match( '/^ \* Version:\s*([^\s]+)/m', $initialization, $header_match );
 preg_match( "/define\( 'SMC_VERSION', '([^']+)' \)/", $initialization, $constant_match );
-$expect( '3.0.0' === ( $header_match[1] ?? '' ), 'plugin header version is 3.0.0' );
+$expect( '3.0.1' === ( $header_match[1] ?? '' ), 'plugin header version is 3.0.1' );
 $expect( ( $header_match[1] ?? '' ) === ( $constant_match[1] ?? '' ), 'plugin header and runtime versions match' );
 $expect( str_contains( $initialization, 'Plugin Name: SMC Organization Profile Integration' ), 'approved plugin name is used' );
 $expect( str_contains( $initialization, 'Text Domain: smc-organization-profile-integration' ), 'approved plugin slug is used' );
@@ -78,7 +78,7 @@ foreach ( $source_files as $file ) {
 $expect( ! str_contains( $all_source, 'register_' . 'post_type' ), 'SMC contains no content-type registration call' );
 $expect( ! str_contains( $fields, 'schema_markup' ), 'ACF model contains no editable schema payload' );
 $expect( str_contains( $field_registry, "'return_format' => 'id'" ), 'media fields store attachment IDs' );
-$expect( str_contains( $dependencies, "public const MINIMUM_VERSION = '13.0.0'" ), 'SMC requires the HWS stable ownership release' );
+$expect( str_contains( $dependencies, "public const MINIMUM_VERSION = '13.0.3'" ), 'SMC requires the HWS stable ownership release' );
 $expect(
     str_contains( $dependencies, "'smp_enable_cpt_organization'" )
     && str_contains( $dependencies, "'enable_cpt_testimonial'" )
@@ -216,7 +216,7 @@ $expect(
     && str_contains( $plugin, 'FrontendAssets::register()' ),
     'shared frontend presentation preserves Organization-page loading without a blocking stylesheet request'
 );
-$expect( '3.0.0' === trim( $read( $root . '/lib/hexa-wordpress-plugin-core/VERSION' ) ), 'bundled Core is synchronized to canonical 3.0.0' );
+$expect( '3.0.1' === trim( $read( $root . '/lib/hexa-wordpress-plugin-core/VERSION' ) ), 'bundled Core is synchronized to canonical 3.0.1' );
 $expect( is_file( $root . '/docs/architecture.md' ) && is_file( $root . '/docs/schema-contract.md' ), 'architecture and schema contracts are documented' );
 
 // Architecture regressions: SMC owns Organization behavior; generic mechanics stay in Core.

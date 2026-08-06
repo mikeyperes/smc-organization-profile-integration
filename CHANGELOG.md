@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.0.1
+
+- Synchronized the vendored Hexa WordPress Plugin Core to 3.0.1.
+- Set HWS Base Tools 13.0.3 as the canonical shared-CPT and optional entity-source dependency.
+
 ## 3.0.0
 
 - Coordinated major release for the consolidated Organization field, schema, REST, presentation, and HWS dependency infrastructure.

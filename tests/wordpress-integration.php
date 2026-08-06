@@ -26,9 +26,9 @@ $expect = static function ( bool $condition, string $message ) use ( &$checks, &
     echo "FAIL {$message}\n";
 };
 
-$expect( defined( 'SMC_VERSION' ) && '3.0.0' === SMC_VERSION, 'SMC 3.0.0 is active' );
+$expect( defined( 'SMC_VERSION' ) && '3.0.1' === SMC_VERSION, 'SMC 3.0.1 is active' );
 $expect( class_exists( SharedContentTypes::class ), 'HWS shared content registry is active' );
-$expect( version_compare( PluginMetadata::VERSION, '13.0.0', '>=' ), 'HWS stable ownership release is active' );
+$expect( version_compare( PluginMetadata::VERSION, '13.0.3', '>=' ), 'HWS stable ownership release is active' );
 $expect( post_type_exists( 'organization' ), 'Organization CPT exists' );
 $expect( post_type_exists( 'testimonial' ), 'Testimonial CPT exists' );
 $expect( post_type_exists( 'team-member' ), 'Team Member CPT exists' );

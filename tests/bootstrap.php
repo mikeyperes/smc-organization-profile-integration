@@ -4,7 +4,7 @@ declare( strict_types=1 );
 
 define( 'ABSPATH', __DIR__ . '/' );
 
-defined( 'SMC_VERSION' ) || define( 'SMC_VERSION', '3.0.0' );
+defined( 'SMC_VERSION' ) || define( 'SMC_VERSION', '3.0.1' );
 defined( 'SMC_PLUGIN_DIR' ) || define( 'SMC_PLUGIN_DIR', dirname( __DIR__ ) . '/' );
 
 $smc_test_core = dirname( __DIR__ ) . '/lib/hexa-wordpress-plugin-core';
