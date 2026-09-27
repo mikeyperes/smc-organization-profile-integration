@@ -57,10 +57,6 @@ final class HwsContentTypes {
         }
 
         self::enable_owned_dependencies();
-
-        if ( ! function_exists( 'acf_add_local_field_group' ) ) {
-            self::activation_error( 'SMC Organization Profile Integration requires Advanced Custom Fields Pro.' );
-        }
     }
 
     public static function enable_owned_dependencies(): void {
@@ -84,7 +80,6 @@ final class HwsContentTypes {
         return [
             'hws_ready'         => self::hws_ready(),
             'hws_version'       => class_exists( PluginMetadata::class ) ? PluginMetadata::VERSION : '',
-            'acf_ready'         => function_exists( 'acf_add_local_field_group' ),
             'organization_type' => post_type_exists( 'organization' ),
             'testimonial_type'  => post_type_exists( 'testimonial' ),
             'team_member_type'  => post_type_exists( 'team-member' ),
@@ -106,27 +101,15 @@ final class HwsContentTypes {
                 'checks'      => [ 'installed' => true, 'active' => true ],
                 'notes'       => 'Owns the shared Organization, Testimonial, and Team Member content types.',
             ],
-            [
-                'id'          => 'advanced-custom-fields-pro',
-                'name'        => 'Advanced Custom Fields Pro',
-                'plugin_file' => 'advanced-custom-fields-pro/acf.php',
-                'slug'        => 'advanced-custom-fields-pro',
-                'source'      => 'pro',
-                'required'    => true,
-                'checks'      => [ 'installed' => true, 'active' => true ],
-                'notes'       => 'Registers the Organization profile field structure.',
-            ],
         ];
     }
 
     public static function render_notice(): void {
-        if ( self::hws_ready() && function_exists( 'acf_add_local_field_group' ) ) {
+        if ( self::hws_ready() ) {
             return;
         }
 
-        $message = ! self::hws_ready()
-            ? sprintf( 'HWS Base Tools %s or newer must be active.', self::MINIMUM_VERSION )
-            : 'Advanced Custom Fields Pro must be active.';
+        $message = sprintf( 'HWS Base Tools %s or newer must be active.', self::MINIMUM_VERSION );
 
         echo '<div class="notice notice-error"><p><strong>SMC Organization Profile:</strong> '
             . esc_html( $message )

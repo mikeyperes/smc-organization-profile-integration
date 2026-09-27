@@ -7,7 +7,7 @@ Canonical Organization fields, schema graphs, REST output, and presentation help
 - Repository: `mikeyperes/smc-organization-profile-integration`
 - Plugin slug: `smc-organization-profile-integration`
 - Namespace: `SMC\OrganizationProfile`
-- Version: `3.0.1`
+- Version: `3.1.0`
 
 ## Ownership
 
@@ -65,7 +65,7 @@ Public field access uses an explicit allowlist.
 
 `initialization.php` is a thin composition root. Namespaced implementation code lives under `src/`; architecture and schema contracts are documented in [docs/architecture.md](docs/architecture.md) and [docs/schema-contract.md](docs/schema-contract.md).
 
-Reusable CPT, entity, ACF settings, dashboard, updater, and schema infrastructure comes from Hexa WP Core 3.0.1.
+Reusable CPT, entity, ACF settings, dashboard, updater, and schema infrastructure comes from Hexa WP Core 3.4.5.
 
 ## Requirements
 
@@ -74,9 +74,9 @@ Reusable CPT, entity, ACF settings, dashboard, updater, and schema infrastructur
 | WordPress | 6.0 |
 | PHP | 8.1 |
 | HWS Base Tools | 13.0.3 |
-| Hexa WP Core bundle | 3.0.1 |
+| Hexa WP Core bundle | 3.4.5 |
 
-ACF Pro is required for the Organization field model.
+ACF Pro is not required: the Organization field model runs on Hexa WP Core custom fields, which use ACF when it is active and store the same data natively when it is not.
 
 ## Installation
 
@@ -93,6 +93,11 @@ php tests/run.php
 Run `tests/wordpress-integration.php` in a bootstrapped WordPress environment for live hook and REST verification.
 
 ## Changelog
+
+### 3.1.0
+
+- ACF Pro is no longer required: the Organization field model, its migrator hook and diagnostics run on Hexa WP Core 3.4.5 `Fields` (ACF when active, native storage otherwise). The ACF Pro activation check, admin notice and required-plugin entry are removed.
+- Synchronized the bundled Hexa WordPress Plugin Core to 3.4.5.
 
 ### 3.0.1
 

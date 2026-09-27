@@ -52,7 +52,7 @@ final class OrganizationContentType {
                         'enabled_default' => true,
                         'definition'      => [ OrganizationFields::class, 'definition' ],
                         'fields'          => OrganizationFields::field_labels(),
-                        'dependencies'    => [ 'HWS Base Tools Organization CPT', 'Advanced Custom Fields Pro' ],
+                        'dependencies'    => [ 'HWS Base Tools Organization CPT' ],
                     ],
                 ],
             ]

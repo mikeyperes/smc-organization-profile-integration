@@ -115,12 +115,12 @@ final class NodeFactory {
         }
 
         $same_as = [];
-        if ( function_exists( 'get_field' ) ) {
-            $urls = get_field( 'urls', 'user_' . $user_id );
+        if ( \Hexa\PluginCore\Fields\Field::available() ) {
+            $urls = \Hexa\PluginCore\Fields\Field::get( 'urls', 'user_' . $user_id );
             $same_as = Normalizer::urls( is_array( $urls ) ? array_values( $urls ) : [] );
         }
 
-        $additional = function_exists( 'get_field' ) ? get_field( 'additional', 'user_' . $user_id ) : [];
+        $additional = \Hexa\PluginCore\Fields\Field::available() ? \Hexa\PluginCore\Fields\Field::get( 'additional', 'user_' . $user_id ) : [];
         $public_email = is_array( $additional )
             ? Normalizer::email( $additional['public_email'] ?? '' )
             : '';
@@ -144,7 +144,7 @@ final class NodeFactory {
             return [];
         }
 
-        $position = function_exists( 'get_field' ) ? get_field( 'position', $post_id ) : get_post_meta( $post_id, 'position', true );
+        $position = \Hexa\PluginCore\Fields\Field::available() ? \Hexa\PluginCore\Fields\Field::get( 'position', $post_id ) : get_post_meta( $post_id, 'position', true );
         $image = get_the_post_thumbnail_url( $post_id, 'full' );
 
         return self::clean(
@@ -312,7 +312,7 @@ final class NodeFactory {
         }
 
         $rating = Normalizer::number( get_post_meta( $post_id, 'rating', true ) );
-        $source_url = function_exists( 'get_field' ) ? get_field( 'url', $post_id ) : get_post_meta( $post_id, 'url', true );
+        $source_url = \Hexa\PluginCore\Fields\Field::available() ? \Hexa\PluginCore\Fields\Field::get( 'url', $post_id ) : get_post_meta( $post_id, 'url', true );
 
         return self::clean(
             [

@@ -22,7 +22,7 @@ final class LegacyFieldMigrator {
 
     public static function register(): void {
         add_action( 'admin_init', [ self::class, 'maybe_run' ], 2 );
-        add_action( 'acf/save_post', [ self::class, 'migrate_saved_post' ], 30 );
+        \Hexa\PluginCore\Fields\Hooks::on( 'save_post', [ self::class, 'migrate_saved_post' ], 30 );
     }
 
     public static function schedule(): void {
@@ -178,8 +178,8 @@ final class LegacyFieldMigrator {
     }
 
     private static function write( int $post_id, string $field, mixed $value ): void {
-        if ( function_exists( 'update_field' ) ) {
-            update_field( $field, $value, $post_id );
+        if ( \Hexa\PluginCore\Fields\Field::available() ) {
+            \Hexa\PluginCore\Fields\Field::update( $field, $value, $post_id );
             return;
         }
 

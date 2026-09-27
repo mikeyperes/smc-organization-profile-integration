@@ -4,13 +4,14 @@ declare( strict_types=1 );
 
 define( 'ABSPATH', __DIR__ . '/' );
 
-defined( 'SMC_VERSION' ) || define( 'SMC_VERSION', '3.0.1' );
+defined( 'SMC_VERSION' ) || define( 'SMC_VERSION', '3.1.0' );
 defined( 'SMC_PLUGIN_DIR' ) || define( 'SMC_PLUGIN_DIR', dirname( __DIR__ ) . '/' );
 
 $smc_test_core = dirname( __DIR__ ) . '/lib/hexa-wordpress-plugin-core';
 require_once $smc_test_core . '/bootstrap.php';
 HexaPluginCorePackageRegistry::register_candidate( 'smc-tests', $smc_test_core );
 HexaPluginCorePackageRegistry::resolve();
+require_once $smc_test_core . '/tests/support/fields.php';
 
 final class WP_User {
     /** @param list<string> $roles */

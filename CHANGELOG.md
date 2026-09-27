@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.1.0
+
+- ACF Pro is no longer required: the Organization field model, its migrator hook and diagnostics run on Hexa WP Core 3.4.5 `Fields` (ACF when active, native storage otherwise). The ACF Pro activation check, admin notice and required-plugin entry are removed.
+- Synchronized the bundled Hexa WordPress Plugin Core to 3.4.5.
+
 ## 3.0.1
 
 - Synchronized the vendored Hexa WordPress Plugin Core to 3.0.1.

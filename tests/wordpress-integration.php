@@ -26,30 +26,24 @@ $expect = static function ( bool $condition, string $message ) use ( &$checks, &
     echo "FAIL {$message}\n";
 };
 
-$expect( defined( 'SMC_VERSION' ) && '3.0.1' === SMC_VERSION, 'SMC 3.0.1 is active' );
+$expect( defined( 'SMC_VERSION' ) && '3.1.0' === SMC_VERSION, 'SMC 3.1.0 is active' );
 $expect( class_exists( SharedContentTypes::class ), 'HWS shared content registry is active' );
 $expect( version_compare( PluginMetadata::VERSION, '13.0.3', '>=' ), 'HWS stable ownership release is active' );
 $expect( post_type_exists( 'organization' ), 'Organization CPT exists' );
 $expect( post_type_exists( 'testimonial' ), 'Testimonial CPT exists' );
 $expect( post_type_exists( 'team-member' ), 'Team Member CPT exists' );
 $expect( has_action( 'init', [ SharedContentTypes::class, 'register_enabled' ] ) !== false, 'shared CPT registry is hooked by HWS' );
-$expect( function_exists( 'acf_add_local_field_group' ), 'ACF Pro is active' );
-
-$field_group = function_exists( 'acf_get_local_field_group' )
-    ? acf_get_local_field_group( OrganizationFields::GROUP_KEY )
-    : false;
-$expect( is_array( $field_group ), 'SMC Organization ACF group is registered' );
+$field_group = \Hexa\PluginCore\Fields\FieldGroups::get_group( OrganizationFields::GROUP_KEY );
+$expect( is_array( $field_group ), 'SMC Organization field group is registered (' . \Hexa\PluginCore\Fields\Acf::mode() . ')' );
 
 $field_names = [];
-if ( function_exists( 'acf_get_fields' ) ) {
-    foreach ( acf_get_fields( OrganizationFields::GROUP_KEY ) ?: [] as $field ) {
-        if ( ! empty( $field['name'] ) ) {
-            $field_names[] = $field['name'];
-        }
+foreach ( \Hexa\PluginCore\Fields\FieldGroups::fields( OrganizationFields::GROUP_KEY ) as $field ) {
+    if ( ! empty( $field['name'] ) ) {
+        $field_names[] = $field['name'];
     }
 }
 foreach ( [ 'identity_links', 'locations', 'press_mentions', 'logo', 'gallery' ] as $name ) {
-    $expect( in_array( $name, $field_names, true ), "ACF field is live: {$name}" );
+    $expect( in_array( $name, $field_names, true ), "Organization field is live: {$name}" );
 }
 
 foreach ( [ 'smc_organization', 'smc_organization_gallery', 'smc_organization_schema', 'organization' ] as $tag ) {

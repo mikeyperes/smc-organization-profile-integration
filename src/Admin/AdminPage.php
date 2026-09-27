@@ -207,7 +207,7 @@ final class AdminPage {
         echo '<h2>System State</h2><p>Runtime ownership and publication readiness.</p></div>';
         echo '<div class="smc-status-grid">';
         self::status_item( 'HWS Base Tools', (bool) $status['hws_ready'], (string) ( $status['hws_version'] ?: 'Not detected' ) );
-        self::status_item( 'Advanced Custom Fields', (bool) $status['acf_ready'], $status['acf_ready'] ? 'Ready' : 'Required' );
+        self::status_item( 'Custom fields', true, \Hexa\PluginCore\Fields\Acf::active() ? 'Ready (ACF)' : 'Ready (native)' );
         self::status_item( 'Organization CPT', (bool) $status['organization_type'], $status['organization_type'] ? 'Owned by HWS' : 'Unavailable' );
         self::status_item( 'Primary Organization', null !== $primary, $primary ? $primary->name() : 'Not selected' );
         echo '</div></section>';
@@ -287,7 +287,7 @@ final class AdminPage {
                     'object_name'   => 'organization',
                     'location'      => 'HWS-owned Organization posts',
                     'fields'        => OrganizationFields::field_labels(),
-                    'dependencies'  => [ 'HWS Base Tools Organization CPT', 'Advanced Custom Fields Pro' ],
+                    'dependencies'  => [ 'HWS Base Tools Organization CPT' ],
                     'test_report'   => 'The plugin architecture suite verifies stable unique field keys and Core factory delegation.',
                 ],
             ],

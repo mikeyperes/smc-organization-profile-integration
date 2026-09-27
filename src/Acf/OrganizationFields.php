@@ -13,7 +13,7 @@ final class OrganizationFields {
     private static ?array $fields = null;
 
     public static function register_hooks(): void {
-        add_filter( 'acf/update_value/name=knowledge_graph_id', [ self::class, 'sanitize_kgid' ], 10, 3 );
+        \Hexa\PluginCore\Fields\Hooks::on( 'update_value/name=knowledge_graph_id', [ self::class, 'sanitize_kgid' ], 10, 3 );
     }
 
     /** @return array<string,mixed> */

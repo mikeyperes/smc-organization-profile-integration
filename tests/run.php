@@ -48,7 +48,7 @@ $core_integration = $read( $root . '/src/Core/CoreIntegration.php' );
 
 preg_match( '/^ \* Version:\s*([^\s]+)/m', $initialization, $header_match );
 preg_match( "/define\( 'SMC_VERSION', '([^']+)' \)/", $initialization, $constant_match );
-$expect( '3.0.1' === ( $header_match[1] ?? '' ), 'plugin header version is 3.0.1' );
+$expect( '3.1.0' === ( $header_match[1] ?? '' ), 'plugin header version is 3.1.0' );
 $expect( ( $header_match[1] ?? '' ) === ( $constant_match[1] ?? '' ), 'plugin header and runtime versions match' );
 $expect( str_contains( $initialization, 'Plugin Name: SMC Organization Profile Integration' ), 'approved plugin name is used' );
 $expect( str_contains( $initialization, 'Text Domain: smc-organization-profile-integration' ), 'approved plugin slug is used' );
@@ -216,7 +216,7 @@ $expect(
     && str_contains( $plugin, 'FrontendAssets::register()' ),
     'shared frontend presentation preserves Organization-page loading without a blocking stylesheet request'
 );
-$expect( '3.0.1' === trim( $read( $root . '/lib/hexa-wordpress-plugin-core/VERSION' ) ), 'bundled Core is synchronized to canonical 3.0.1' );
+$expect( '3.4.5' === trim( $read( $root . '/lib/hexa-wordpress-plugin-core/VERSION' ) ), 'bundled Core is synchronized to canonical 3.4.5' );
 $expect( is_file( $root . '/docs/architecture.md' ) && is_file( $root . '/docs/schema-contract.md' ), 'architecture and schema contracts are documented' );
 
 // Architecture regressions: SMC owns Organization behavior; generic mechanics stay in Core.
