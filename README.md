@@ -2,6 +2,29 @@
 
 Canonical Organization fields, schema graphs, REST output, and presentation helpers for HWS-managed company websites.
 
+> Feature base for HWS Skills. Read before building on this plugin; use or
+> extend these features instead of rebuilding them.
+
+**Purpose:** the canonical Organization record of a company website, its schema graph and display helpers. **Admin:** WP Admin → Organization settings (the plugin's dashboard). **Depends on:** ACF Pro; HWS Base Tools primary entity.
+
+## Features
+
+### Organization fields
+- **Does:** prints any field of the site's Organization (or a given one).
+- **Use:** `[organization field="" id="" format="html" link="false" target="" size="large" columns="3" pretty="false" action=""]`; `[smc_organization field="name" ...]` takes the same attributes with `name` as the default field.
+- **Code:** `src/Shortcodes/ShortcodeRegistrar.php`
+
+### Organization gallery
+- **Use:** `[smc_organization_gallery id="" field="gallery" size="large" columns="3"]`.
+
+### Organization schema
+- **Does:** outputs the Organization JSON-LD graph; also added to pages automatically.
+- **Use:** `[smc_organization_schema]`.
+- **Extend:** `smc_organization_schema_graph`, `smc_organization_schema_node`.
+
+### Extension points
+- `smc_dashboard_tabs`, `smc_dashboard_render_tab`.
+
 ## Identity
 
 - Repository: `mikeyperes/smc-organization-profile-integration`
