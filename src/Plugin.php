@@ -48,7 +48,7 @@ final class Plugin {
 
         OrganizationFields::register_hooks();
         LegacyFieldMigrator::register();
-        SchemaInjector::register_filters();
+        SchemaInjector::register();
         RestController::register();
         ShortcodeRegistrar::register();
         FrontendAssets::register();

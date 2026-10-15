@@ -48,7 +48,7 @@ $core_integration = $read( $root . '/src/Core/CoreIntegration.php' );
 
 preg_match( '/^ \* Version:\s*([^\s]+)/m', $initialization, $header_match );
 preg_match( "/define\( 'SMC_VERSION', '([^']+)' \)/", $initialization, $constant_match );
-$expect( '3.1.0' === ( $header_match[1] ?? '' ), 'plugin header version is 3.1.0' );
+$expect( '3.2.0' === ( $header_match[1] ?? '' ), 'plugin header version is 3.2.0' );
 $expect( ( $header_match[1] ?? '' ) === ( $constant_match[1] ?? '' ), 'plugin header and runtime versions match' );
 $expect( str_contains( $initialization, 'Plugin Name: SMC Organization Profile Integration' ), 'approved plugin name is used' );
 $expect( str_contains( $initialization, 'Text Domain: smc-organization-profile-integration' ), 'approved plugin slug is used' );
@@ -134,25 +134,25 @@ $expect(
 );
 $expect(
     str_contains( $schema, "'subjectOf'" )
-    && str_contains( $schema, 'NodeFactory::article' )
+    && str_contains( $schema, 'self::press_mention(' )
     && str_contains( $schema, "array_column( \$data->identity_links(), 'url' )" ),
     'press is subjectOf while sameAs comes only from identity links'
 );
-foreach ( [ 'foundingLocation', 'contactPoint', 'numberOfEmployees', 'makesOffer', 'hasCredential', 'aggregateRating', 'ImageObject' ] as $property ) {
+foreach ( [ 'foundingLocation', 'contactPoint', 'numberOfEmployees', 'makesOffer', 'hasCredential', 'ImageObject' ] as $property ) {
     $haystack = 'ImageObject' === $property ? $core_media_normalizer : $schema;
     $expect( str_contains( $haystack, $property ), "schema supports {$property}" );
 }
 $expect(
-    str_contains( $graph, "'WebSite'" )
+    str_contains( $graph, 'SchemaSources::website(' )
     && str_contains( $graph, "'AboutPage'" )
     && str_contains( $graph, "'ProfilePage'" ),
     'graph supports website and page nodes'
 );
 $expect(
-    str_contains( $core_integration, 'new CoreSchemaInjector' )
-    && str_contains( $injector, "add_filter( 'rank_math/json_ld'" )
-    && str_contains( $injector, 'SchemaDocumentRenderer' ),
-    'frontend injection and Rank Math coexistence are guarded through Hexa WP Core'
+    str_contains( $injector, 'SchemaPage::register(' )
+    && ! str_contains( $injector, 'rank_math' )
+    && ! str_contains( $core_integration, 'SchemaInjector' ),
+    'organization schema joins the shared Hexa WP Core page graph; Rank Math is left to the HWS Base Tools switch'
 );
 $expect( str_contains( $injector, 'if ( $organization_id <= 0 )' ), 'unmanaged frontend requests cannot fall back to the primary organization' );
 foreach ( [ '/organizations', '/organizations/primary', '/organizations/(?P<id>\\d+)', '/organizations/(?P<id>\\d+)/schema' ] as $route ) {
@@ -216,7 +216,7 @@ $expect(
     && str_contains( $plugin, 'FrontendAssets::register()' ),
     'shared frontend presentation preserves Organization-page loading without a blocking stylesheet request'
 );
-$expect( '3.4.5' === trim( $read( $root . '/lib/hexa-wordpress-plugin-core/VERSION' ) ), 'bundled Core is synchronized to canonical 3.4.5' );
+$expect( '3.22.0' === trim( $read( $root . '/lib/hexa-wordpress-plugin-core/VERSION' ) ), 'bundled Core is synchronized to canonical 3.22.0' );
 $expect( is_file( $root . '/docs/architecture.md' ) && is_file( $root . '/docs/schema-contract.md' ), 'architecture and schema contracts are documented' );
 
 // Architecture regressions: SMC owns Organization behavior; generic mechanics stay in Core.

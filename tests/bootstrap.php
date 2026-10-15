@@ -4,7 +4,7 @@ declare( strict_types=1 );
 
 define( 'ABSPATH', __DIR__ . '/' );
 
-defined( 'SMC_VERSION' ) || define( 'SMC_VERSION', '3.1.0' );
+defined( 'SMC_VERSION' ) || define( 'SMC_VERSION', '3.2.0' );
 defined( 'SMC_PLUGIN_DIR' ) || define( 'SMC_PLUGIN_DIR', dirname( __DIR__ ) . '/' );
 
 $smc_test_core = dirname( __DIR__ ) . '/lib/hexa-wordpress-plugin-core';
@@ -220,11 +220,13 @@ function get_posts( array $args = [] ): array {
     return isset( $args['posts_per_page'] ) && 1 === $args['posts_per_page'] ? array_slice( $ids, 0, 1 ) : $ids;
 }
 
-function get_the_title( int $post_id ): string {
+function get_the_title( mixed $post_id ): string {
+    $post_id = $post_id instanceof WP_Post ? $post_id->ID : (int) $post_id;
     return $GLOBALS['smc_test_posts'][ $post_id ]['title'] ?? ( $post_id >= 100 ? 'Image ' . $post_id : '' );
 }
 
-function get_permalink( int $post_id ): string {
+function get_permalink( mixed $post_id ): string {
+    $post_id = $post_id instanceof WP_Post ? $post_id->ID : (int) $post_id;
     return $GLOBALS['smc_test_posts'][ $post_id ]['url'] ?? 'https://company.test/?p=' . $post_id;
 }
 
@@ -414,4 +416,35 @@ function get_bloginfo( string $field ): string {
 
 function apply_filters( string $hook, mixed $value, mixed ...$args ): mixed {
     return $value;
+}
+
+function get_the_author_meta( string $field, int $user_id = 0 ): string {
+    return 'description' === $field ? 'Founder biography.' : '';
+}
+function wp_get_attachment_url( int $id ): string {
+    return wp_get_attachment_image_src( $id, 'large' )[0] ?? '';
+}
+function wp_get_attachment_metadata( int $id ): array {
+    $source = wp_get_attachment_image_src( $id, 'large' );
+    return [ 'width' => (int) ( $source[1] ?? 0 ), 'height' => (int) ( $source[2] ?? 0 ) ];
+}
+function get_post( int $post_id ): ?WP_Post {
+    return 'organization' === get_post_type( $post_id ) || 'page' === get_post_type( $post_id ) ? new WP_Post( $post_id ) : null;
+}
+function get_the_date( string $format, mixed $post ): string { return '2026-01-01T00:00:00+00:00'; }
+function get_the_modified_date( string $format, mixed $post ): string { return '2026-01-02T00:00:00+00:00'; }
+function has_excerpt( mixed $post ): bool { return false; }
+function strip_shortcodes( string $content ): string { return $content; }
+function wp_trim_words( string $text, int $words = 55 ): string { return implode( ' ', array_slice( preg_split( '/\s+/', $text ) ?: [], 0, $words ) ); }
+final class WP_Post {
+    public int $ID;
+    public string $post_type;
+    public string $post_content;
+    public string $post_excerpt;
+    public function __construct( int $id ) {
+        $this->ID = $id;
+        $this->post_type = (string) get_post_type( $id );
+        $this->post_content = get_post_field( 'post_content', $id );
+        $this->post_excerpt = get_post_field( 'post_excerpt', $id );
+    }
 }

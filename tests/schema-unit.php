@@ -16,7 +16,6 @@ foreach (
         'src/Data/OrganizationRepository.php',
         'src/Data/OrganizationData.php',
         'src/Schema/SchemaIds.php',
-        'src/Schema/NodeFactory.php',
         'src/Schema/OrganizationSchema.php',
         'src/Schema/OrganizationGraph.php',
         'src/Schema/SchemaInjector.php',
@@ -106,8 +105,7 @@ $expect( 2 === count( $node['founder'] ?? [] ), 'WordPress and team founder rela
 $expect( 2 === count( $node['makesOffer'] ?? [] ), 'services and products become offers' );
 $expect( 1 === count( $node['brand'] ?? [] ), 'brands become graph references' );
 $expect( 1 === count( $node['hasCredential'] ?? [] ), 'credentials become graph references' );
-$expect( 1 === count( $node['review'] ?? [] ), 'testimonials become review references' );
-$expect( 4.5 === ( $node['aggregateRating']['ratingValue'] ?? null ), 'aggregate rating uses only stored numeric ratings' );
+$expect( ! isset( $node['review'] ) && ! isset( $node['aggregateRating'] ), 'testimonials get no schema' );
 $expect( in_array( 'https://www.linkedin.com/company/acme/', $node['sameAs'] ?? [], true ), 'identity URL is emitted as sameAs' );
 $expect( ! in_array( 'https://news.example/acme-launch/', $node['sameAs'] ?? [], true ), 'press URL is never emitted as sameAs' );
 $expect( 2 === count( $node['subjectOf'] ?? [] ), 'press and milestones are represented through subjectOf' );
@@ -132,7 +130,7 @@ $expect( in_array( 'WebSite', $types, true ), 'graph includes WebSite' );
 $expect( in_array( 'ProfilePage', $types, true ), 'organization single graph includes ProfilePage' );
 $expect( in_array( 'Corporation', $types, true ), 'graph includes the Organization node' );
 $expect( in_array( 'Article', $types, true ), 'press mention becomes an Article node' );
-$expect( in_array( 'Review', $types, true ), 'testimonial becomes a Review node' );
+$expect( ! in_array( 'Review', $types, true ), 'testimonials get no Review node' );
 $expect( $graph === OrganizationGraph::build( 10, 10 ), 'graph generation is deterministic' );
 
 $article = array_values(
@@ -147,31 +145,10 @@ $GLOBALS['smc_test_meta'][10]['schema_enabled'] = 0;
 OrganizationRepository::clear_cache( 10 );
 OrganizationSchema::clear_cache( 10 );
 $expect( [] === OrganizationSchema::build( 10, false ), 'an explicit per-organization schema toggle disables output' );
-$rank_math = [
-    'graph' => [
-        '@graph' => [
-            [ '@type' => 'WebSite' ],
-            [ '@type' => 'BreadcrumbList' ],
-            [ '@type' => 'WebPage' ],
-        ],
-    ],
-];
-$expect(
-    $rank_math === SchemaInjector::filter_rank_math( $rank_math ),
-    'Rank Math output remains untouched when the organization opts out'
-);
 $GLOBALS['smc_test_meta'][10]['schema_enabled'] = 1;
 OrganizationRepository::clear_cache( 10 );
 OrganizationSchema::clear_cache( 10 );
-
-$filtered_rank_math = SchemaInjector::filter_rank_math( $rank_math );
-$filtered_nodes = $filtered_rank_math['graph']['@graph'] ?? [];
-$expect(
-    array_is_list( $filtered_nodes )
-        && 1 === count( $filtered_nodes )
-        && 'BreadcrumbList' === ( $filtered_nodes[0]['@type'] ?? '' ),
-    'Rank Math deduplication preserves unrelated nodes in a JSON list'
-);
+$expect( ! method_exists( SchemaInjector::class, 'filter_rank_math' ), 'Rank Math schema output is left to the HWS Base Tools switch' );
 
 $gallery_urls = html_entity_decode(
     OrganizationShortcode::render(

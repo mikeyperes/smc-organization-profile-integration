@@ -30,9 +30,14 @@ final class OrganizationRepository {
             }
         }
 
-        return self::primary_id();
+        $primary_id = self::primary_id();
+        return $primary_id > 0 ? $primary_id : self::first_organization_id();
     }
 
+    /**
+     * The site's primary organization, only when one is set. Schema uses this,
+     * so a site never claims an arbitrary organization as itself.
+     */
     public static function primary_id(): int {
         if ( null !== self::$primary_id ) {
             return self::$primary_id;
@@ -52,6 +57,12 @@ final class OrganizationRepository {
             }
         }
 
+        self::$primary_id = 0;
+        return self::$primary_id;
+    }
+
+    /** The first published organization, for displays that need one without an id. */
+    private static function first_organization_id(): int {
         $posts = get_posts(
             [
                 'post_type'      => 'organization',
@@ -63,8 +74,7 @@ final class OrganizationRepository {
             ]
         );
 
-        self::$primary_id = isset( $posts[0] ) ? absint( $posts[0] ) : 0;
-        return self::$primary_id;
+        return isset( $posts[0] ) ? absint( $posts[0] ) : 0;
     }
 
     /** @return array<string,mixed>|null */
@@ -108,7 +118,7 @@ final class OrganizationRepository {
     public static function data( int $object_id = 0, string $kind = '' ): ?OrganizationData {
         if ( $object_id <= 0 ) {
             $entity = self::primary_entity();
-            $object_id = $entity ? (int) $entity['id'] : self::primary_id();
+            $object_id = $entity ? (int) $entity['id'] : self::resolve_id();
             $kind = $entity ? (string) $entity['kind'] : 'post';
         } elseif ( '' === $kind ) {
             $entity = self::primary_entity();

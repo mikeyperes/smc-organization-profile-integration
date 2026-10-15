@@ -4,50 +4,29 @@ declare( strict_types=1 );
 
 namespace SMC\OrganizationProfile\Schema;
 
-use Hexa\PluginCore\SchemaTools\SchemaDocumentRenderer;
+use Hexa\PluginCore\SchemaTools\SchemaPage;
 use SMC\OrganizationProfile\Data\OrganizationRepository;
 use SMC\OrganizationProfile\Support\Settings;
 
 defined( 'ABSPATH' ) || exit;
 
+/**
+ * Decides which pages show an organization graph and adds it to HexaWP
+ * Core's shared schema block: each organization's own page, plus the
+ * homepage, About and profile pages for the site's primary organization.
+ */
 final class SchemaInjector {
-    private const OWNED_TYPES = [
-        'Organization',
-        'Corporation',
-        'LocalBusiness',
-        'ProfessionalService',
-        'NGO',
-        'NonprofitOrganization',
-        'EducationalOrganization',
-        'GovernmentOrganization',
-        'MedicalOrganization',
-        'SportsOrganization',
-        'WebSite',
-        'WebPage',
-        'AboutPage',
-        'ProfilePage',
-    ];
+    public const SOURCE = 'smc-organization';
+    public const PRIORITY = 10;
 
-    public static function register_filters(): void {
-        add_filter( 'rank_math/json_ld', [ self::class, 'filter_rank_math' ], 1000 );
+    public static function register(): void {
+        SchemaPage::register( self::SOURCE, [ self::class, 'nodes' ], self::PRIORITY );
     }
 
-    public static function should_output(): bool {
-        return null !== self::current_context();
-    }
-
-    /** @return array<string,mixed> */
-    public static function schema(): array {
+    /** @return list<array<string,mixed>> */
+    public static function nodes(): array {
         $context = self::current_context();
-        return null === $context ? [] : OrganizationGraph::build( $context['organization_id'], $context['page_id'] );
-    }
-
-    /** Backward-compatible direct renderer; runtime hooks use Hexa WP Core's injector. */
-    public static function render(): void {
-        $script = ( new SchemaDocumentRenderer() )->script( self::schema(), 'smc-organization-schema' );
-        if ( '' !== $script ) {
-            echo "\n" . $script . "\n";
-        }
+        return null === $context ? [] : OrganizationGraph::nodes( $context['organization_id'], $context['page_id'] );
     }
 
     /**
@@ -94,50 +73,5 @@ final class SchemaInjector {
             'organization_id' => $organization_id,
             'page_id'         => $page_id > 0 ? $page_id : $organization_id,
         ];
-    }
-
-    public static function filter_rank_math( mixed $data ): mixed {
-        if ( ! Settings::enabled( Settings::RANK_MATH_DEDUPE ) || null === self::current_context() || ! is_array( $data ) ) {
-            return $data;
-        }
-
-        $filtered = [];
-        foreach ( $data as $key => $node ) {
-            if ( is_array( $node ) && isset( $node['@graph'] ) && is_array( $node['@graph'] ) ) {
-                $node['@graph'] = self::filter_nodes( $node['@graph'] );
-                if ( [] === $node['@graph'] ) {
-                    continue;
-                }
-            } elseif ( is_array( $node ) && self::is_owned_node( $node ) ) {
-                continue;
-            }
-
-            $filtered[ $key ] = $node;
-        }
-
-        return $filtered;
-    }
-
-    /**
-     * @param array<int|string,mixed> $nodes
-     * @return array<int|string,mixed>
-     */
-    private static function filter_nodes( array $nodes ): array {
-        return array_values(
-            array_filter(
-                $nodes,
-                static fn ( mixed $node ): bool => ! is_array( $node ) || ! self::is_owned_node( $node )
-            )
-        );
-    }
-
-    /** @param array<string,mixed> $node */
-    private static function is_owned_node( array $node ): bool {
-        $types = $node['@type'] ?? [];
-        if ( ! is_array( $types ) ) {
-            $types = [ $types ];
-        }
-
-        return [] !== array_intersect( self::OWNED_TYPES, array_map( 'strval', $types ) );
     }
 }

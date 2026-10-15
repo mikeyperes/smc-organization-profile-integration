@@ -11,7 +11,6 @@ final class Settings {
     public const INJECT_HOMEPAGE = 'smc_inject_homepage_schema';
     public const ABOUT_PAGE = 'smc_about_page_id';
     public const PROFILE_PAGE = 'smc_profile_page_id';
-    public const RANK_MATH_DEDUPE = 'smc_rank_math_dedupe';
     public const LEGACY_SHORTCODE = 'smc_enable_legacy_organization_shortcode';
     public const REST_ENABLED = 'smc_rest_enabled';
     public const SCHEMA_ENABLED = 'smc_schema_enabled';
@@ -21,7 +20,6 @@ final class Settings {
         self::INJECT_HOMEPAGE      => 1,
         self::ABOUT_PAGE           => 0,
         self::PROFILE_PAGE         => 0,
-        self::RANK_MATH_DEDUPE     => 1,
         self::LEGACY_SHORTCODE     => 1,
         self::REST_ENABLED         => 1,
         self::SCHEMA_ENABLED       => 1,
@@ -49,7 +47,7 @@ final class Settings {
             update_option( $name, isset( $input[ $name ] ) ? absint( $input[ $name ] ) : 0, false );
         }
 
-        foreach ( [ self::INJECT_HOMEPAGE, self::RANK_MATH_DEDUPE, self::LEGACY_SHORTCODE, self::REST_ENABLED, self::SCHEMA_ENABLED ] as $name ) {
+        foreach ( [ self::INJECT_HOMEPAGE, self::LEGACY_SHORTCODE, self::REST_ENABLED, self::SCHEMA_ENABLED ] as $name ) {
             update_option( $name, isset( $input[ $name ] ) ? 1 : 0, false );
         }
     }

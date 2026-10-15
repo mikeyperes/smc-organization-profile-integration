@@ -254,7 +254,6 @@ final class AdminPage {
         echo '<fieldset class="smc-toggle-list">';
         self::toggle( Settings::SCHEMA_ENABLED, 'Enable SMC schema output' );
         self::toggle( Settings::INJECT_HOMEPAGE, 'Inject the primary organization graph on the homepage' );
-        self::toggle( Settings::RANK_MATH_DEDUPE, 'Remove SMC-owned nodes from Rank Math output on managed pages' );
         self::toggle( Settings::REST_ENABLED, 'Expose public organization REST endpoints' );
         self::toggle( Settings::LEGACY_SHORTCODE, 'Own the legacy [organization] shortcode alias' );
         echo '</fieldset></section>';

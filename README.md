@@ -18,7 +18,7 @@ Canonical Organization fields, schema graphs, REST output, and presentation help
 - **Use:** `[smc_organization_gallery id="" field="gallery" size="large" columns="3"]`.
 
 ### Organization schema
-- **Does:** outputs the Organization JSON-LD graph; also added to pages automatically.
+- **Does:** adds each organization's graph to Hexa WP Core's shared `hexa-schema` block on its own page, and the primary organization's graph on the homepage, About and profile pages when a primary organization is set. `[smc_organization_schema]` prints the graph on demand.
 - **Use:** `[smc_organization_schema]`.
 - **Extend:** `smc_organization_schema_graph`, `smc_organization_schema_node`.
 
@@ -62,9 +62,7 @@ Media values are stored as attachment IDs and normalized for REST, shortcodes, a
 
 ## Schema
 
-SMC builds deterministic schema graphs with stable IDs. Graphs may include `WebSite`, `ProfilePage`, `Organization` subtypes, `ImageObject`, `Offer`, `EducationalOccupationalCredential`, `Article`, and `Review` nodes.
-
-Schema encoding, deduplication, and frontend injection use `Hexa\PluginCore\SchemaTools`. Rank Math coexistence is guarded so unrelated nodes are preserved.
+SMC maps organization data onto Hexa WP Core's schema library (`SchemaNodes`, `SchemaSources`) with stable IDs: `WebSite`, `ProfilePage`/`AboutPage`, `Organization` subtypes, `Place`, `ImageObject`, `Offer`, `Brand`, `EducationalOccupationalCredential`, press `Article` and milestone `Event` nodes. Testimonials get no schema. Nodes go into Core's shared `hexa-schema` block (`SchemaPage` source `smc-organization`, priority 10). Rank Math's schema is controlled only by HWS Base Tools.
 
 ## REST API
 
@@ -88,7 +86,7 @@ Public field access uses an explicit allowlist.
 
 `initialization.php` is a thin composition root. Namespaced implementation code lives under `src/`; architecture and schema contracts are documented in [docs/architecture.md](docs/architecture.md) and [docs/schema-contract.md](docs/schema-contract.md).
 
-Reusable CPT, entity, ACF settings, dashboard, updater, and schema infrastructure comes from Hexa WP Core 3.4.5.
+Reusable CPT, entity, ACF settings, dashboard, updater, and schema infrastructure comes from Hexa WP Core 3.22.0.
 
 ## Requirements
 
@@ -97,7 +95,7 @@ Reusable CPT, entity, ACF settings, dashboard, updater, and schema infrastructur
 | WordPress | 6.0 |
 | PHP | 8.1 |
 | HWS Base Tools | 13.0.3 |
-| Hexa WP Core bundle | 3.4.5 |
+| Hexa WP Core bundle | 3.22.0 |
 
 ACF Pro is not required: the Organization field model runs on Hexa WP Core custom fields, which use ACF when it is active and store the same data natively when it is not.
 
@@ -116,6 +114,13 @@ php tests/run.php
 Run `tests/wordpress-integration.php` in a bootstrapped WordPress environment for live hook and REST verification.
 
 ## Changelog
+
+### 3.2.0
+
+- Organization schema is built with Hexa WP Core 3.22.0's shared schema library and printed in Core's one schema block per page.
+- A site claims an organization as its own (homepage, About and profile pages) only when a primary organization is set; it no longer picks the first organization post.
+- Testimonials no longer become Review or aggregateRating schema.
+- Removed SMC's own Rank Math deduplication setting; Rank Math's schema is one HWS Base Tools setting.
 
 ### 3.1.0
 

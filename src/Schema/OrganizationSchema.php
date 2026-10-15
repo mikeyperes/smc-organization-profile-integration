@@ -4,7 +4,8 @@ declare( strict_types=1 );
 
 namespace SMC\OrganizationProfile\Schema;
 
-use SMC\OrganizationProfile\Data\MediaNormalizer;
+use Hexa\PluginCore\SchemaTools\SchemaNodes;
+use Hexa\PluginCore\SchemaTools\SchemaSources;
 use SMC\OrganizationProfile\Data\Normalizer;
 use SMC\OrganizationProfile\Data\OrganizationData;
 use SMC\OrganizationProfile\Data\OrganizationRepository;
@@ -12,19 +13,6 @@ use SMC\OrganizationProfile\Data\OrganizationRepository;
 defined( 'ABSPATH' ) || exit;
 
 final class OrganizationSchema {
-    private const TYPES = [
-        'Organization',
-        'Corporation',
-        'LocalBusiness',
-        'ProfessionalService',
-        'NGO',
-        'NonprofitOrganization',
-        'EducationalOrganization',
-        'GovernmentOrganization',
-        'MedicalOrganization',
-        'SportsOrganization',
-    ];
-
     /** @var array<int,array{organization:array<string,mixed>,nodes:list<array<string,mixed>>}> */
     private static array $bundle_cache = [];
 
@@ -78,7 +66,6 @@ final class OrganizationSchema {
             'hasCredential' => [],
             'seeks'         => [],
             'subjectOf'     => [],
-            'review'        => [],
             'image'         => [],
         ];
 
@@ -104,9 +91,6 @@ final class OrganizationSchema {
      */
     private static function organization_node( OrganizationData $data, string $id, array $references ): array {
         $type = $data->text( 'organization_type' );
-        if ( ! in_array( $type, self::TYPES, true ) ) {
-            $type = 'Organization';
-        }
 
         $description = $data->text( 'short_description' );
         if ( '' === $description ) {
@@ -118,51 +102,44 @@ final class OrganizationSchema {
 
         $identifiers = [];
         foreach ( $data->rows( 'identifiers' ) as $row ) {
-            $identifier = NodeFactory::identifier( $row );
-            if ( count( $identifier ) > 1 ) {
+            $identifier = SchemaNodes::property_value( (string) ( $row['property_id'] ?? '' ), $row['value'] ?? '', (string) ( $row['url'] ?? '' ) );
+            if ( [] !== $identifier ) {
                 $identifiers[] = $identifier;
             }
         }
 
         $kgid = $data->text( 'knowledge_graph_id' );
         if ( '' !== $kgid ) {
-            $identifiers[] = [
-                '@type'      => 'PropertyValue',
-                'propertyID' => 'googleKgMID',
-                'value'      => $kgid,
-            ];
+            $identifiers[] = SchemaNodes::property_value( 'googleKgMID', $kgid );
         }
 
         foreach ( [ 'lei_code' => 'LEI', 'tax_id' => 'Tax ID', 'vat_id' => 'VAT ID', 'duns_number' => 'DUNS' ] as $field => $label ) {
             $value = $data->text( $field );
             if ( '' !== $value ) {
-                $identifiers[] = [ '@type' => 'PropertyValue', 'propertyID' => $label, 'value' => $value ];
+                $identifiers[] = SchemaNodes::property_value( $label, $value );
             }
         }
 
         $contact_points = [];
         foreach ( $data->contact_points() as $row ) {
-            $node = NodeFactory::contact_point( $row );
-            if ( count( $node ) > 1 ) {
+            $node = SchemaNodes::contact_point( $row );
+            if ( [] !== $node ) {
                 $contact_points[] = $node;
             }
         }
 
         $areas = [];
         foreach ( $data->rows( 'area_served' ) as $row ) {
-            $area = NodeFactory::area( $row );
-            if ( count( $area ) > 1 ) {
+            $area = SchemaNodes::area( $row );
+            if ( [] !== $area ) {
                 $areas[] = $area;
             }
         }
 
-        $founding_location = NodeFactory::place(
+        $founding_location = SchemaNodes::place(
             Normalizer::rows( $data->raw( 'founding_location' ) )[0] ?? [],
             SchemaIds::related( $id, 'place', 'founding' )
         );
-        if ( count( $founding_location ) <= 2 ) {
-            $founding_location = [];
-        }
 
         $employee_count = self::employee_count( $data );
         $awards = Normalizer::strings( $data->raw( 'award_entries' ), [ 'name', 'value' ] );
@@ -175,9 +152,8 @@ final class OrganizationSchema {
             }
         }
 
-        $node = NodeFactory::clean(
+        $node = SchemaNodes::organization(
             [
-                '@type'             => $type,
                 '@id'               => $id,
                 'name'              => $data->name(),
                 'legalName'         => $data->text( 'legal_name' ) ?: $data->name(),
@@ -216,11 +192,10 @@ final class OrganizationSchema {
                 'award'             => array_values( array_unique( $awards ) ),
                 'seeks'             => $references['seeks'],
                 'subjectOf'         => $references['subjectOf'],
-                'review'            => $references['review'],
-                'aggregateRating'   => self::aggregate_rating( $data->relation_ids( 'testimonials' ) ),
                 'logo'              => $references['logo'][0] ?? null,
                 'image'             => $references['image'],
-            ]
+            ],
+            $type
         );
 
         return apply_filters( 'smc_organization_schema_node', $node, $data->id(), $data );
@@ -233,8 +208,8 @@ final class OrganizationSchema {
     private static function append_locations( OrganizationData $data, string $organization_id, array &$nodes, array &$references ): void {
         foreach ( $data->locations() as $index => $row ) {
             $id = SchemaIds::related( $organization_id, 'place', $index + 1 );
-            $node = NodeFactory::place( $row, $id );
-            if ( count( $node ) <= 2 ) {
+            $node = SchemaNodes::place( $row, $id );
+            if ( [] === $node ) {
                 continue;
             }
             $nodes[ $id ] = $node;
@@ -249,7 +224,8 @@ final class OrganizationSchema {
     private static function append_people( OrganizationData $data, string $organization_id, array &$nodes, array &$references ): void {
         foreach ( $data->relation_ids( 'founder_users' ) as $user_id ) {
             $id = SchemaIds::related( $organization_id, 'founder-user', $user_id );
-            $node = NodeFactory::user_person( $user_id, $id );
+            $additional = \Hexa\PluginCore\Fields\Field::available() ? \Hexa\PluginCore\Fields\Field::get( 'additional', 'user_' . $user_id ) : [];
+            $node = SchemaSources::user_person( $user_id, $id, [ 'email' => is_array( $additional ) ? ( $additional['public_email'] ?? '' ) : '' ] );
             if ( [] !== $node ) {
                 $nodes[ $id ] = $node;
                 $references['founder'][] = [ '@id' => $id ];
@@ -258,7 +234,7 @@ final class OrganizationSchema {
 
         foreach ( $data->relation_ids( 'founders' ) as $post_id ) {
             $id = SchemaIds::related( $organization_id, 'founder', $post_id );
-            $node = NodeFactory::team_person( $post_id, $id );
+            $node = self::team_person( $post_id, $id );
             if ( [] !== $node ) {
                 $nodes[ $id ] = $node;
                 $references['founder'][] = [ '@id' => $id ];
@@ -267,7 +243,7 @@ final class OrganizationSchema {
 
         foreach ( $data->relation_ids( 'team_members' ) as $post_id ) {
             $id = SchemaIds::related( $organization_id, 'employee', $post_id );
-            $node = NodeFactory::team_person( $post_id, $id );
+            $node = self::team_person( $post_id, $id );
             if ( [] !== $node ) {
                 $nodes[ $id ] = $node;
                 $references['employee'][] = [ '@id' => $id ];
@@ -283,7 +259,7 @@ final class OrganizationSchema {
         foreach ( [ 'services' => 'service', 'products' => 'product' ] as $field => $kind ) {
             foreach ( $data->rows( $field ) as $index => $row ) {
                 $id = SchemaIds::related( $organization_id, $kind, $index + 1 );
-                $node = NodeFactory::offer( $row, $kind, $id );
+                $node = SchemaNodes::offer( $row, $kind, $id );
                 if ( [] !== $node ) {
                     $nodes[ $id ] = $node;
                     $references['makesOffer'][] = [ '@id' => $id ];
@@ -293,7 +269,7 @@ final class OrganizationSchema {
 
         foreach ( $data->rows( 'brand_entries' ) as $index => $row ) {
             $id = SchemaIds::related( $organization_id, 'brand', $index + 1 );
-            $node = NodeFactory::brand( $row, $id );
+            $node = SchemaNodes::brand( $row, $id );
             if ( [] !== $node ) {
                 $nodes[ $id ] = $node;
                 $references['brand'][] = [ '@id' => $id ];
@@ -302,7 +278,7 @@ final class OrganizationSchema {
 
         foreach ( $data->rows( 'credentials' ) as $index => $row ) {
             $id = SchemaIds::related( $organization_id, 'credential', $index + 1 );
-            $node = NodeFactory::credential( $row, $id );
+            $node = SchemaNodes::credential( $row, $id );
             if ( [] !== $node ) {
                 $nodes[ $id ] = $node;
                 $references['hasCredential'][] = [ '@id' => $id ];
@@ -311,7 +287,7 @@ final class OrganizationSchema {
 
         foreach ( $data->rows( 'seek_entries' ) as $index => $row ) {
             $id = SchemaIds::related( $organization_id, 'demand', $index + 1 );
-            $node = NodeFactory::demand( $row, $id );
+            $node = SchemaNodes::demand( $row, $id );
             if ( [] !== $node ) {
                 $nodes[ $id ] = $node;
                 $references['seeks'][] = [ '@id' => $id ];
@@ -326,7 +302,7 @@ final class OrganizationSchema {
     private static function append_reputation_nodes( OrganizationData $data, string $organization_id, array &$nodes, array &$references ): void {
         foreach ( $data->rows( 'press_mentions' ) as $index => $row ) {
             $id = SchemaIds::related( $organization_id, 'article', $index + 1 );
-            $node = NodeFactory::article( $row, $id, $organization_id );
+            $node = self::press_mention( $row, $id, $organization_id );
             if ( [] !== $node ) {
                 $nodes[ $id ] = $node;
                 $references['subjectOf'][] = [ '@id' => $id ];
@@ -335,19 +311,10 @@ final class OrganizationSchema {
 
         foreach ( $data->rows( 'milestones' ) as $index => $row ) {
             $id = SchemaIds::related( $organization_id, 'milestone', $index + 1 );
-            $node = NodeFactory::milestone( $row, $id, $organization_id );
+            $node = SchemaNodes::event( $row, $id, [ 'about' => SchemaNodes::ref( $organization_id ), 'organizer' => SchemaNodes::ref( $organization_id ) ] );
             if ( [] !== $node ) {
                 $nodes[ $id ] = $node;
                 $references['subjectOf'][] = [ '@id' => $id ];
-            }
-        }
-
-        foreach ( $data->relation_ids( 'testimonials' ) as $post_id ) {
-            $id = SchemaIds::related( $organization_id, 'review', $post_id );
-            $node = NodeFactory::review( $post_id, $id, $organization_id );
-            if ( [] !== $node ) {
-                $nodes[ $id ] = $node;
-                $references['review'][] = [ '@id' => $id ];
             }
         }
     }
@@ -360,7 +327,7 @@ final class OrganizationSchema {
         $logo = $data->logo();
         if ( [] !== $logo ) {
             $id = SchemaIds::related( $organization_id, 'image', 'logo' );
-            $nodes[ $id ] = MediaNormalizer::schema_image( $logo, $id );
+            $nodes[ $id ] = SchemaNodes::image( $logo, $id );
             $references['logo'][] = [ '@id' => $id ];
             $references['image'][ $id ] = [ '@id' => $id ];
         }
@@ -372,7 +339,7 @@ final class OrganizationSchema {
             }
             $value = $image['id'] ?? $index + 1;
             $id = SchemaIds::related( $organization_id, 'image', $value );
-            $nodes[ $id ] = MediaNormalizer::schema_image( $image, $id );
+            $nodes[ $id ] = SchemaNodes::image( $image, $id );
             $references['image'][ $id ] = [ '@id' => $id ];
         }
 
@@ -386,9 +353,9 @@ final class OrganizationSchema {
         $count = $data->number( 'number_of_employees' );
 
         if ( null !== $minimum || null !== $maximum ) {
-            return NodeFactory::clean(
+            return SchemaNodes::node(
+                'QuantitativeValue',
                 [
-                    '@type'    => 'QuantitativeValue',
                     'minValue' => $minimum,
                     'maxValue' => $maximum,
                     'value'    => $count,
@@ -404,11 +371,11 @@ final class OrganizationSchema {
         $locations = $data->locations();
         foreach ( $locations as $location ) {
             if ( 'headquarters' === ( $location['location_type'] ?? '' ) ) {
-                return NodeFactory::address( $location );
+                return SchemaNodes::postal_address( $location );
             }
         }
 
-        return [] !== $locations ? NodeFactory::address( $locations[0] ) : [];
+        return [] !== $locations ? SchemaNodes::postal_address( $locations[0] ) : [];
     }
 
     /** @return array<string,string>|null */
@@ -427,26 +394,44 @@ final class OrganizationSchema {
         );
     }
 
-    /** @param list<int> $testimonial_ids @return array<string,mixed> */
-    private static function aggregate_rating( array $testimonial_ids ): array {
-        $ratings = [];
-        foreach ( $testimonial_ids as $post_id ) {
-            $rating = Normalizer::number( get_post_meta( $post_id, 'rating', true ) );
-            if ( null !== $rating ) {
-                $ratings[] = (float) $rating;
-            }
-        }
-
-        if ( [] === $ratings ) {
+    /** A team member post as a Person. */
+    private static function team_person( int $post_id, string $id ): array {
+        if ( 'team-member' !== get_post_type( $post_id ) || 'publish' !== get_post_status( $post_id ) ) {
             return [];
         }
 
-        return [
-            '@type'       => 'AggregateRating',
-            'ratingValue' => round( array_sum( $ratings ) / count( $ratings ), 2 ),
-            'ratingCount' => count( $ratings ),
-            'bestRating'  => 5,
-            'worstRating' => 1,
-        ];
+        $position = \Hexa\PluginCore\Fields\Field::available() ? \Hexa\PluginCore\Fields\Field::get( 'position', $post_id ) : get_post_meta( $post_id, 'position', true );
+
+        return SchemaNodes::person(
+            [
+                '@id'         => $id,
+                'name'        => Normalizer::text( get_the_title( $post_id ) ),
+                'url'         => Normalizer::url( get_permalink( $post_id ) ),
+                'jobTitle'    => Normalizer::text( $position ),
+                'description' => Normalizer::text( get_post_field( 'post_excerpt', $post_id ) ?: get_post_field( 'post_content', $post_id ) ),
+                'image'       => SchemaSources::post_image( $post_id ),
+            ]
+        );
+    }
+
+    /** One press mention row (an article about the organization elsewhere). */
+    private static function press_mention( array $row, string $id, string $organization_id ): array {
+        $url = Normalizer::url( $row['url'] ?? '' );
+        $headline = Normalizer::text( $row['headline'] ?? '' );
+        if ( '' === $url && '' === $headline ) {
+            return [];
+        }
+
+        return SchemaNodes::article(
+            [
+                '@id'           => $id,
+                'headline'      => $headline,
+                'url'           => $url,
+                'datePublished' => Normalizer::date( $row['date_published'] ?? '' ),
+                'publisher'     => SchemaNodes::thing( (string) ( $row['publisher'] ?? '' ), '', 'Organization' ),
+                'author'        => SchemaNodes::thing( (string) ( $row['author'] ?? '' ), '', 'Person' ),
+                'about'         => SchemaNodes::ref( $organization_id ),
+            ]
+        );
     }
 }
