@@ -7,8 +7,8 @@ require_once __DIR__ . '/bootstrap.php';
 $root = dirname( __DIR__ );
 foreach (
     [
-        'src/Acf/FieldRegistry.php',
-        'src/Acf/OrganizationFields.php',
+        'src/Fields/FieldRegistry.php',
+        'src/Fields/OrganizationFields.php',
         'src/Data/Normalizer.php',
         'src/Data/FieldReader.php',
         'src/Data/MediaNormalizer.php',
@@ -28,7 +28,7 @@ foreach (
     require_once $root . '/' . $file;
 }
 
-use SMC\OrganizationProfile\Acf\OrganizationFields;
+use SMC\OrganizationProfile\Fields\OrganizationFields;
 use SMC\OrganizationProfile\Data\Normalizer;
 use SMC\OrganizationProfile\Data\OrganizationRepository;
 use SMC\OrganizationProfile\Schema\OrganizationGraph;

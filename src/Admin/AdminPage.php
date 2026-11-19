@@ -15,7 +15,7 @@ use Hexa\PluginCore\WpAdminAjax\AjaxRequest;
 use Hexa\PluginCore\WpAdminTabs\HostTabsRenderer;
 use Hexa\PluginCore\WpAdminTabs\TabDefinition;
 use Hexa\PluginCore\WpAdminTabs\TabRegistry;
-use SMC\OrganizationProfile\Acf\OrganizationFields;
+use SMC\OrganizationProfile\Fields\OrganizationFields;
 use SMC\OrganizationProfile\ContentTypes\OrganizationContentType;
 use SMC\OrganizationProfile\Data\OrganizationRepository;
 use SMC\OrganizationProfile\Dependencies\HwsContentTypes;

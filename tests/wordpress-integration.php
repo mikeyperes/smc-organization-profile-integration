@@ -4,7 +4,7 @@ declare( strict_types=1 );
 
 use HWS\BaseTools\ContentTypes\SharedContentTypes;
 use HWS\BaseTools\PluginRuntime\PluginMetadata;
-use SMC\OrganizationProfile\Acf\OrganizationFields;
+use SMC\OrganizationProfile\Fields\OrganizationFields;
 use SMC\OrganizationProfile\Data\OrganizationRepository;
 use SMC\OrganizationProfile\Http\RestController;
 use SMC\OrganizationProfile\Schema\OrganizationGraph;
@@ -95,7 +95,7 @@ foreach ( new RecursiveIteratorIterator( new RecursiveDirectoryIterator( SMC_PLU
     }
 }
 $expect( ! str_contains( $smc_source, 'register_' . 'post_type' ), 'deployed SMC source does not register CPTs' );
-$expect( ! str_contains( file_get_contents( SMC_PLUGIN_DIR . 'src/Acf/OrganizationFields.php' ) ?: '', 'schema_markup' ), 'deployed ACF model has no editable schema payload' );
+$expect( ! str_contains( file_get_contents( SMC_PLUGIN_DIR . 'src/Fields/OrganizationFields.php' ) ?: '', 'schema_markup' ), 'deployed ACF model has no editable schema payload' );
 
 if ( defined( 'SFPF_PLUGIN_DIR' ) ) {
     $expect( ! is_file( SFPF_PLUGIN_DIR . 'snippets/register-cpt-organization.php' ), 'SFPF no longer ships Organization registration' );

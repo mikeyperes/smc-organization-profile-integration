@@ -6,7 +6,7 @@ namespace SMC\OrganizationProfile\ContentTypes;
 
 use Hexa\PluginCore\ContentTypes\ContentTypeRegistry;
 use Hexa\PluginCore\CoreContracts\PluginContextInterface;
-use SMC\OrganizationProfile\Acf\OrganizationFields;
+use SMC\OrganizationProfile\Fields\OrganizationFields;
 
 defined( 'ABSPATH' ) || exit;
 

@@ -4,7 +4,7 @@ declare( strict_types=1 );
 
 namespace SMC\OrganizationProfile;
 
-use SMC\OrganizationProfile\Acf\OrganizationFields;
+use SMC\OrganizationProfile\Fields\OrganizationFields;
 use SMC\OrganizationProfile\Admin\AdminPage;
 use SMC\OrganizationProfile\Core\CoreIntegration;
 use SMC\OrganizationProfile\Data\MediaNormalizer;

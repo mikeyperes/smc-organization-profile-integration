@@ -35,6 +35,7 @@ final class AcfFieldGroupRegistry implements ModuleInterface {
                 'description' => '', 'group_key' => '', 'enabled_default' => true,
                 'legacy_option' => '', 'definition' => [], 'fields' => [],
                 'location' => '', 'dependencies' => [], 'available_when' => null,
+                'client_view' => [],
             ],
             $definition
         );
@@ -52,7 +53,7 @@ final class AcfFieldGroupRegistry implements ModuleInterface {
     }
 
     public function register(): void {
-        add_filter( 'acf/load_field_group', [ $this, 'apply_managed_state' ], 999 );
+        add_filter( 'hexa_fields/load_field_groups', [ $this, 'apply_managed_groups' ], 999 );
         \Hexa\PluginCore\Fields\FieldGroups::ready( [ $this, 'register_groups' ], (int) $this->config['hook_priority'] );
         ( new AcfFieldGroupAjaxController( $this, $this->config ) )->register();
     }
@@ -77,7 +78,12 @@ final class AcfFieldGroupRegistry implements ModuleInterface {
         return $field_group;
     }
 
-    /** Registers enabled groups through Fields\FieldGroups (ACF or native). */
+    /** Applies saved visibility to Core's field groups. */
+    public function apply_managed_groups( array $groups ): array {
+        return array_map( [ $this, 'apply_managed_state' ], $groups );
+    }
+
+    /** Registers enabled groups through Core Fields. */
     public function register_groups(): void {
         foreach ( $this->resolved_definitions() as $definition ) {
             if ( empty( $definition['enabled'] ) || empty( $definition['available'] ) ) {
@@ -95,6 +101,8 @@ final class AcfFieldGroupRegistry implements ModuleInterface {
             if ( empty( $group['title'] ) ) {
                 $group['title'] = $definition['label'];
             }
+            $declared = [] !== $definition['client_view'] ? $definition['client_view'] : ( $group['client_view'] ?? [] );
+            $group['client_view'] = $this->store->client_view( [ 'client_view' => $declared ] + $definition );
             \Hexa\PluginCore\Fields\FieldGroups::add( $group );
         }
     }
@@ -104,6 +112,7 @@ final class AcfFieldGroupRegistry implements ModuleInterface {
         return array_map(
             function ( array $definition ): array {
                 $definition['enabled'] = $this->store->enabled( $definition );
+                $definition['client_view_state'] = $this->store->client_view( $definition );
                 $definition['available'] = ! is_callable( $definition['available_when'] ) || (bool) call_user_func( $definition['available_when'] );
                 return $definition;
             },

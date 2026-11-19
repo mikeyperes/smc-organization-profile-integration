@@ -36,7 +36,7 @@ Root namespace: Hexa\PluginCore\
 Source root: src/
 Version source: VERSION
 
-Current release: 3.22.0
+Current release: 3.51.2
 ```
 
 Do not rename these.
@@ -77,10 +77,9 @@ src/ShortcodeRegistry/  Hexa\PluginCore\ShortcodeRegistry
 src/SiteStructure/      Hexa\PluginCore\SiteStructure
 src/SchemaDetection/    Hexa\PluginCore\SchemaDetection
 src/SchemaTools/        Hexa\PluginCore\SchemaTools
-src/SearchDisplay/      Hexa\PluginCore\SearchDisplay
+src/Search/             Hexa\PluginCore\Search
 src/SearchQuery/        Hexa\PluginCore\SearchQuery
 src/SmartSearch/        Hexa\PluginCore\SmartSearch
-src/DirectorySearch/    Hexa\PluginCore\DirectorySearch
 src/Calendar/           Hexa\PluginCore\Calendar
 src/Map/                Hexa\PluginCore\Map
 src/QueryFilter/        Hexa\PluginCore\QueryFilter
@@ -142,6 +141,8 @@ Use `DynamicNotice` for the consistent top-of-panel result shown after an AJAX
 settings save or in-place action. Core owns the success, warning, error and
 information structure plus the browser API; host plugins provide only concise
 action-specific text.
+
+Use `TaskRunner` for any admin job that runs as AJAX steps (cleanups, scans, migrations): stat cards, progress meter, status badges, job tables, live log and the `HexaWpCoreTaskRunner` client with one-at-a-time queues, batched loops and Stop. Do not build another per-plugin progress runner. See `docs/task-runner.md`.
 
 Use `CoreUi::collapsible()` for expandable cards. The shared component owns the native `<details>` structure, persistent open/closed state, and visible chevron SVG indicator, so users can tell the card expands.
 
@@ -833,34 +834,23 @@ $store->store( 'openai', 'api_key', $raw_key );
 $masked = $store->get_masked( 'openai', 'api_key' );
 ```
 
-## Front-End Search Display
+## Search
 
-Namespace:
-
-```text
-Hexa\PluginCore\SearchDisplay
-```
-
-Class:
-
-```text
-SearchDisplayRenderer
-```
-
-Use this renderer for public site-search forms. It owns five selectable templates: `icon-reveal`, `overlay`, `pill`, `underline`, and `command`. Every template submits a native WordPress GET request with `name="s"`; it does not load AJAX search results.
-
-The host plugin owns its saved design option and shortcode. The host must call this same renderer for the backend preview and the front-end shortcode so preview markup cannot drift from production markup.
-
-```php
-echo \Hexa\PluginCore\SearchDisplay\SearchDisplayRenderer::render([
-    'style'       => 'overlay',
-    'accent'      => '#2f6df6',
-    'placeholder' => 'Search stories...',
-    'hidden_fields' => [ 'example_search' => '1' ],
-]);
-```
-
-Do not duplicate the renderer CSS, SVG, markup, or interaction script inside a host plugin. `hidden_fields` is the bridge to a shortcode-scoped `SearchQuery` engine; names are sanitized, values are escaped, and the renderer accepts at most ten fields.
+`Hexa\PluginCore\Search` is the one public search. A profile
+(`SearchRegistry::register()`) says what is searched (posts of chosen types,
+or users of chosen roles), how words match (the site's `SearchQuery`
+settings or explicit fields, meta keys and taxonomy names), its filters
+(`QueryFilter`) and sorts. Results show in one of two places: the page's own
+list narrows in place (category, tag, author, search and post type pages, or
+any Elementor loop with the CSS class `hexa-listing-results`, such as a
+homepage section scoped by `post_type`, `category`, `tag` and `author`), or,
+with a `render_item` callable, the box renders its own cards with sorts and
+Load more. One script refreshes every box without a page reload, and one
+loading look dims the results under a spinner. `SearchBox::header()` draws
+the header search box (`icon-reveal` or `field`), which submits to the search
+page and never opens a popup. Add `SearchModule` to the host bootstrap and
+place `[hexa_search id="…"]` or call `SearchBox::render()`. Full protocol:
+`docs/hexa-search.md`; markup and styling: HWS Base Tools `docs/hws-search.md`.
 
 ## Native Search Query Behavior
 
@@ -877,8 +867,6 @@ SearchQueryConfiguration
 SearchTermParser
 SearchQueryEngine
 MetaConstraintSql
-JetEngineSearchAdapter
-ElementorSearchAdapter
 ElementorPublicTextIndex
 ResultTypeLabels
 ElementorResultTypeTag
@@ -900,18 +888,6 @@ $engine = new \Hexa\PluginCore\SearchQuery\SearchQueryEngine(
 );
 $engine->register();
 
-$jet_engine = new \Hexa\PluginCore\SearchQuery\JetEngineSearchAdapter(
-    $settings_provider,
-    'example_search'
-);
-$jet_engine->register();
-
-$elementor_search = new \Hexa\PluginCore\SearchQuery\ElementorSearchAdapter(
-    $settings_provider,
-    'example_live_search'
-);
-$elementor_search->register();
-
 $elementor_text = new \Hexa\PluginCore\SearchQuery\ElementorPublicTextIndex(
     get_post_types( [ 'public' => true ], 'names' )
 );
@@ -929,7 +905,7 @@ Supported behavior:
 - public post-type selection, result count from 0 to 100, relevance/newest/oldest/title ordering, and opt-in host-mapped natural time windows such as `24 hours`, `one week`, or `Chabad next 48 hours`
 - `shortcode` scope through a hidden marker, or deliberate `all` public-search scope
 
-Safety rules are mandatory. The engine rejects admin, AJAX, REST, cron, XML-RPC, feeds, unmarked nested queries, empty searches, suppressed filters, and disabled queries before host settings are loaded. It then checks enabled/scope state and records weak exact-object state consumed by one idempotently registered `posts_search` dispatcher. Duplicate preparation replaces state instead of stacking callbacks, and abandoned queries are not retained. `JetEngineSearchAdapter` can explicitly mark a posts grid created by a search-results template; archive grids and unrelated requests stay untouched. `ElementorSearchAdapter` binds one exact native Elementor Search widget Query ID, permits only that verified widget's REST/GET query, preserves Elementor's Loop Item renderer and live pagination, forces bounded public results, and adds scoped cancellation, stale-response protection, accessible request states, immediate stale-markup clearing below Elementor's configured minimum length, nested-component Escape handling, and input-height icon anchoring for in-flow results. Its trusted configurator may return a bounded `meta_constraints` tree; Core compiles that tree into prepared, correlated predicates on the same exact query so host date/state eligibility does not require multiplying `WP_Meta_Query` joins. `ElementorPublicTextIndex` stores only normalized text from Elementor's anonymous public renderer, refreshes exact public dependents after reusable-template saves, and exposes a hash-only dry run for bounded backfills. Advanced sources use `EXISTS` subqueries and remain opt-in. Parsing is capped at eight unique terms and 80 characters per term.
+Safety rules are mandatory. The engine rejects admin, AJAX, REST, cron, XML-RPC, feeds, unmarked nested queries, empty searches, suppressed filters, and disabled queries before host settings are loaded. It then checks enabled/scope state and records weak exact-object state consumed by one idempotently registered `posts_search` dispatcher. Duplicate preparation replaces state instead of stacking callbacks, and abandoned queries are not retained. `ElementorPublicTextIndex` stores only normalized text from Elementor's anonymous public renderer, refreshes exact public dependents after reusable-template saves, and exposes a hash-only dry run for bounded backfills. Advanced sources use `EXISTS` subqueries and remain opt-in. Parsing is capped at eight unique terms and 80 characters per term.
 
 To flag what kind of content each result is, call `ResultTypeLabels::register( [ 'post' => 'Press Release' ], 'Site Content' )` and place Core's **Result Type** Elementor dynamic tag in the result Loop Item; style per type through the loop item's `type-{post_type}` class.
 
@@ -991,23 +967,25 @@ Namespace: Hexa\PluginCore\FieldStructures
 
 Classes: AcfFieldGroupRegistry, AcfFieldGroupSettingsStore, AcfFieldGroupAjaxController, AcfFieldGroupRenderer, AcfSettingsPanel, FieldStructureManager, FieldStructureRenderer
 
-Use this for admin displays that explain and test ACF field groups, custom post types, taxonomies, and option-backed structures. Host plugins provide definitions; Hexa Core normalizes them, renders one row per structure, shows enabled and registered status, exposes setting toggles through the host save AJAX action, and keeps fields, dependencies, code examples, test reports, and activity notes in a consistent layout.
+Use this for admin displays that explain and test field groups, custom post types, taxonomies, and option-backed structures. Host plugins provide definitions; Hexa Core normalizes them, renders one row per structure, shows enabled and registered status, exposes setting toggles through the host save AJAX action, and keeps fields, dependencies, code examples, test reports, and activity notes in a consistent layout.
 
-Definition keys: id, label, type, setting_key, enabled, registered, acf_group_key, object_name, location, fields, dependencies, instructions, code_example, test_report, activity, edit_url. The registered and test_report values may be callbacks. Do not move plugin-specific ACF registration arrays into core; core owns the display and status model only.
+Definition keys: id, label, type, setting_key, enabled, registered, acf_group_key, object_name, location, fields, dependencies, instructions, code_example, test_report, activity, edit_url. The registered and test_report values may be callbacks. Hosts own their field definitions. Core owns registration, field editing, storage, formatting and the shared status display.
 
 Example use: create a FieldStructureRenderer, pass an array of structure definitions, and pass save_action plus nonce when toggles should save through AJAX.
 
-Use `AcfFieldGroupRegistry` when Core must own the actual `acf/init` registration path and toggle state. A disabled definition also deactivates database-imported copies that use the same ACF group key. Use `AcfSettingsPanel` to display established option-backed ACF groups inside a host tab without moving their stored values. Host plugins always retain their exact field arrays.
+Use `AcfFieldGroupRegistry` to register fields in Core and preserve their toggle state. Use `AcfSettingsPanel` to edit existing option-backed field groups inside a host tab without moving their stored values. The older class names remain callable. Host plugins always retain their exact field arrays.
 
 ## Schema Tools
 
 Namespace: Hexa\PluginCore\SchemaTools
 
-Classes: SchemaGraph, SchemaDocumentRenderer, SchemaInjector, SchemaDashboardRenderer.
+Classes: SchemaNodes, SchemaSources, SchemaIds, SchemaPage, SchemaContext, SchemaStructures, SchemaStructuresPanel, SchemaStructuresModule, SchemaGraph, SchemaDocumentRenderer, SchemaInjector, SchemaDashboardRenderer.
+
+`SchemaStructures::register( $owner, $args )` declares a plugin's structures (pages, types, modes, builder, sample page); each ships in its default mode, prints through `SchemaPage`, and gets `SchemaStructuresPanel::render( $owner )` and `wp hexa schema`. Builders take a `SchemaContext`, so the same builder serves the live page, a preview and a test. `SchemaNodes::person_profile( $record )` builds a complete Person from a plain record; see `docs/schema-structures.md`.
 
 `SchemaGraph::web_url()` rejects wrong-shaped field values and returns only HTTP(S) URLs. Hosts should continue to later field sources when it returns an empty string. `SchemaGraph::sanitize_urls()` is the final fail-closed guard for URL-range properties, while `SchemaGraph::validation_issues()` exposes semantic property paths for tests and reports. `SchemaGraph::standalone_nodes()` converts reference-only objects to identifier URL values while preserving detached typed summaries for author, publisher, copyright-holder, and image properties, allowing every top-level graph node to remain independently detectable. A host can include `@id` and `@type` in an overridden typed-summary property map when relationships must stay explicitly linked to those independent nodes without repeating their descriptive fields. Valid URL lists, `Role` values for `url`, and structured policy nodes are preserved.
 
-Host plugins build their own schema objects and hand the result to Core for graph cleanup, duplicate-node merging, safe JSON-LD rendering, and one-shot hook output. Do not move domain-specific Person, Organization, Publication, Profile, or Article mappings into Core. See `docs/schema-tools.md` and `docs/schema-standalone-nodes.md`; test with `tests/schema-document.php` and `tests/schema-standalone-nodes.php`.
+Host plugins read their own fields and decide which pages carry which structures; Core holds the generic builders that turn plain records into nodes (`person_profile()` among them) and handles graph cleanup, duplicate-node merging, safe JSON-LD rendering and output. Do not read a plugin's fields or options in Core. See `docs/schema-tools.md` and `docs/schema-standalone-nodes.md`; test with `tests/schema-document.php` and `tests/schema-standalone-nodes.php`.
 
 ## Taxonomies
 
@@ -1561,7 +1539,7 @@ Do not execute feature behavior at include time.
 
 Namespace: `Hexa\PluginCore\DatabaseCleanup`
 
-Use `DatabaseCleanupService`, `DatabaseCleanupAjaxController`, and `DatabaseCleanupRenderer` for WP-Optimize-backed cleanup sessions. Core owns provider activation, task/table iteration, live reporting, and restoring the provider to its pre-run activation state. Hosts provide capability, nonce, AJAX names, labels, and the provider plugin file.
+Deprecated in 3.24.1: site-wide database work belongs to HWS Base Tools (Database Optimization tab). Do not use in new code. Legacy: `DatabaseCleanupService`, `DatabaseCleanupAjaxController`, and `DatabaseCleanupRenderer` run WP-Optimize-backed cleanup sessions. Core owns provider activation, task/table iteration, live reporting, and restoring the provider to its pre-run activation state. Hosts provide capability, nonce, AJAX names, labels, and the provider plugin file.
 
 ## Object Cache
 
@@ -1778,3 +1756,28 @@ php tests/litespeed-cache.php
 ## User profile route
 
 Call `\Hexa\PluginCore\Users\UserProfileBridge::register()` from `hexa_plugin_core_package_selected` to expose `GET/POST /wp-json/hexa-plugin-core/v1/users/{id}/profile` (needs `list_users` and `edit_user`). GET returns `rows`, safe `meta`, `legacy_avatar_url` and `avatar_provider`. POST accepts `native` (display_name, first_name, last_name, nickname, user_url, description, user_email), `meta`, `fields` and `avatar: {media_id}`, then returns the fresh profile plus `written`. Role, login, password, capability and session keys are always refused.
+
+## Collection submissions
+FrontendForms\SubmissionStore provides collection storage, unique email keys, IP/header normalization, rate limits and safe CSV. Hosts own enablement, authorization, consent, notifications and privacy hook registration. See docs/collection-submissions.md.
+
+PublicComponents\InlineStyles::enqueue(handle, css) queues deduplicated inline shortcode CSS through WordPress, with late footer printing. FrontendForms\SubmissionStore::delete(collection, id) deletes one collection-bound row after host authorization.
+
+SubmissionStore::scan($after,$limit,$collection,$upper) provides ascending snapshot-bounded reads. Hosts must authorize access; see docs/frontend-forms.md for the cursor envelope and deletion reconciliation.
+
+SubmissionStore::deleted($after,$limit) provides an ascending deletion_id cursor, original subscriber ID, collection and UTC time only. delete/erase atomically journal with removal (InnoDB); lists() includes known empty collections and totals. See docs/frontend-forms.md.
+
+Term choice limits support `excluded_terms` (IDs or callback) outside the choice count and `applies_to` (WP_Post callback) for host ownership checks. Only signed-in users are limited; CLI and cron saves are exempt.
+
+### PDF / print
+- **Does:** Renders trusted HTML items as physical-size print pages or PDF, with no domain-specific content.
+- **Use:** `new PdfPrint\PageSize($widthInches, $heightInches)` and `new PdfPrint\HtmlDocument($size)`; call `html($items, $css, true)` or `pdf($items, $css)`. PDF requires host-bundled `dompdf/dompdf`.
+- **Extend:** Hosts supply escaped item HTML, bounded item lists, CSS, permission checks and response delivery.
+- **Code:** `src/PdfPrint/`. See [PDF / print](docs/pdf-print.md).
+
+## Signed JSON requests
+
+Use `Hexa\PluginCore\ApiKeys\SignedJsonClient` for domain-bound HMAC HTTPS calls. Hosts provide endpoints, header prefix, key and calling URL or domain; Core normalizes the domain, signs exact body bytes and generates a new nonce per send. See `docs/signed-json.md`.
+
+## Press-release profile client
+
+`Hexa\PluginCore\PressReleaseProfiles\PressReleaseProfilesClient` reads public authors, exact author URLs, person searches and release lists from a configured HTTPS origin. Use `author`, `find_author`, `author_releases`, `search_people`, `person` and `releases`; all return success/data or failure/code/message envelopes. See `docs/press-release-profiles.md`. Hosts own the source URL, selected identity, UI and output.

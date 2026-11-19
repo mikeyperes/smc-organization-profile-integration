@@ -5,9 +5,11 @@ Canonical Organization fields, schema graphs, REST output, and presentation help
 > Feature base for HWS Skills. Read before building on this plugin; use or
 > extend these features instead of rebuilding them.
 
-**Purpose:** the canonical Organization record of a company website, its schema graph and display helpers. **Admin:** WP Admin → Organization settings (the plugin's dashboard). **Depends on:** ACF Pro; HWS Base Tools primary entity.
+**Purpose:** the canonical Organization record of a company website, its schema graph and display helpers. **Admin:** WP Admin → Organization settings (the plugin's dashboard). **Integration:** HWS Base Tools primary entity.
 
 ## Features
+
+- Hexa WP Core 3.64.0 registers, edits and reads Organization fields using the existing values and keys.
 
 ### Organization fields
 - **Does:** prints any field of the site's Organization (or a given one).
@@ -36,7 +38,7 @@ Canonical Organization fields, schema graphs, REST output, and presentation help
 
 SMC owns:
 
-- Canonical Organization ACF fields.
+- Canonical Organization fields.
 - Organization data normalization and repositories.
 - Organization/WebSite/ProfilePage schema construction.
 - Organization REST endpoints and shortcodes.
@@ -97,7 +99,7 @@ Reusable CPT, entity, ACF settings, dashboard, updater, and schema infrastructur
 | HWS Base Tools | 13.0.3 |
 | Hexa WP Core bundle | 3.22.0 |
 
-ACF Pro is not required: the Organization field model runs on Hexa WP Core custom fields, which use ACF when it is active and store the same data natively when it is not.
+Organization fields use the Hexa WP Core editor and existing WordPress storage.
 
 ## Installation
 

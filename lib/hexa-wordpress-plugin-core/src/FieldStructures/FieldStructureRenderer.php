@@ -15,7 +15,7 @@ final class FieldStructureRenderer {
         $nonce       = isset( $args["nonce"] ) ? (string) $args["nonce"] : "";
         $nonce_field = isset( $args["nonce_field"] ) ? sanitize_key( (string) $args["nonce_field"] ) : "nonce";
         $title       = isset( $args["title"] ) ? (string) $args["title"] : "Field Structures";
-        $description = isset( $args["description"] ) ? (string) $args["description"] : "Reusable ACF, custom post type, taxonomy, and option-backed structure controls.";
+        $description = isset( $args["description"] ) ? (string) $args["description"] : "Reusable field, custom post type, taxonomy, and option-backed structure controls.";
         ob_start();
         ?>
         <div class="hpc-ui hpc-field-structures" data-hpc-field-structures data-ajax-url="<?php echo esc_url( $ajax_url ); ?>" data-save-action="<?php echo esc_attr( $save_action ); ?>" data-nonce-field="<?php echo esc_attr( $nonce_field ); ?>" data-nonce="<?php echo esc_attr( $nonce ); ?>">
@@ -55,7 +55,7 @@ final class FieldStructureRenderer {
                 <?php if ( "" !== (string) $item["description"] ) : ?><p><?php echo esc_html( (string) $item["description"] ); ?></p><?php endif; ?>
                 <dl class="hpc-field-structure-meta">
                     <?php if ( "" !== (string) $item["setting_key"] ) : ?><div><dt>Setting</dt><dd><span class="hpc-code"><?php echo esc_html( (string) $item["setting_key"] ); ?></span></dd></div><?php endif; ?>
-                    <?php if ( "" !== (string) $item["acf_group_key"] ) : ?><div><dt>ACF group</dt><dd><span class="hpc-code"><?php echo esc_html( (string) $item["acf_group_key"] ); ?></span></dd></div><?php endif; ?>
+                    <?php if ( "" !== (string) $item["acf_group_key"] ) : ?><div><dt>Field group</dt><dd><span class="hpc-code"><?php echo esc_html( (string) $item["acf_group_key"] ); ?></span></dd></div><?php endif; ?>
                     <?php if ( "" !== (string) $item["object_name"] ) : ?><div><dt>Object</dt><dd><span class="hpc-code"><?php echo esc_html( (string) $item["object_name"] ); ?></span></dd></div><?php endif; ?>
                     <?php if ( "" !== (string) $item["location"] ) : ?><div><dt>Location</dt><dd><?php echo esc_html( (string) $item["location"] ); ?></dd></div><?php endif; ?>
                 </dl>
@@ -70,7 +70,7 @@ final class FieldStructureRenderer {
                 <?php echo $this->detail_block( "Fields", (array) $item["fields"] ); ?>
                 <?php echo $this->detail_block( "Dependencies", (array) $item["dependencies"] ); ?>
                 <?php if ( "" !== (string) $item["instructions"] ) : ?><?php echo CoreUi::subcard( [ "title" => "Use instructions", "body_html" => "<p>" . esc_html( (string) $item["instructions"] ) . "</p>" ] ); ?><?php endif; ?>
-                <?php if ( "" !== (string) $item["code_example"] ) : ?><?php echo CoreUi::subcard( [ "title" => "Code example", "body_html" => "<pre class=\"hpc-readme\">" . esc_html( (string) $item["code_example"] ) . "</pre>" ] ); ?><?php endif; ?>
+                <?php if ( "" !== (string) $item["code_example"] ) : ?><?php echo CoreUi::subcard( [ "title" => "Code example", "body_html" => \Hexa\PluginCore\WpAdminComponents\CodeDisplay::render( (string) $item["code_example"], [ "language" => "php", "title" => "PHP" ] ) ] ); ?><?php endif; ?>
                 <?php echo CoreUi::subcard( [ "title" => "Test report", "body_html" => "<p>" . esc_html( (string) $item["test_report"] ) . "</p>" ] ); ?>
                 <?php if ( "" !== (string) $item["activity"] ) : ?><?php echo CoreUi::subcard( [ "title" => "Activity", "body_html" => "<p>" . esc_html( (string) $item["activity"] ) . "</p>" ] ); ?><?php endif; ?>
             </div>
@@ -92,7 +92,7 @@ final class FieldStructureRenderer {
 
     private function type_label( string $type ): string {
         return match ( $type ) {
-            "acf" => "ACF",
+            "acf", "field" => "Field group",
             "cpt" => "CPT",
             "taxonomy" => "Taxonomy",
             "option" => "Option",
