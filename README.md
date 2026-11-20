@@ -9,6 +9,8 @@ Canonical Organization fields, schema graphs, REST output, and presentation help
 
 ## Features
 
+- The Organization dashboard reports the Core field engine and field structure.
+
 - Hexa WP Core 3.64.0 registers, edits and reads Organization fields using the existing values and keys.
 
 ### Organization fields

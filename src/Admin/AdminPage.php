@@ -207,7 +207,7 @@ final class AdminPage {
         echo '<h2>System State</h2><p>Runtime ownership and publication readiness.</p></div>';
         echo '<div class="smc-status-grid">';
         self::status_item( 'HWS Base Tools', (bool) $status['hws_ready'], (string) ( $status['hws_version'] ?: 'Not detected' ) );
-        self::status_item( 'Custom fields', true, \Hexa\PluginCore\Fields\Acf::active() ? 'Ready (ACF)' : 'Ready (native)' );
+        self::status_item( 'Custom fields', \Hexa\PluginCore\Fields\Field::available(), 'Hexa WP Core' );
         self::status_item( 'Organization CPT', (bool) $status['organization_type'], $status['organization_type'] ? 'Owned by HWS' : 'Unavailable' );
         self::status_item( 'Primary Organization', null !== $primary, $primary ? $primary->name() : 'Not selected' );
         echo '</div></section>';
@@ -266,7 +266,7 @@ final class AdminPage {
             OrganizationContentType::registry(),
             [
                 'title' => 'Custom Post Types',
-                'description' => 'SMC extends the HWS-owned Organization content type. Its ACF structure is registered and controlled through Hexa WP Core without duplicating CPT ownership.',
+                'description' => 'SMC extends the HWS-owned Organization content type. Hexa WP Core registers and edits its field structure.',
                 'persist_prefix' => 'smc',
             ]
         );
