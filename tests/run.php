@@ -2,7 +2,13 @@
 
 declare( strict_types=1 );
 
+use Hexa\PluginCore\CoreRuntime\CoreVersion;
+use Hexa\PluginCore\PluginUpdates\GitHubVersionClient;
+
 $root = dirname( __DIR__ );
+$core_root = $root . '/lib/hexa-wordpress-plugin-core';
+require_once $core_root . '/src/CoreRuntime/CoreVersion.php';
+require_once $core_root . '/src/PluginUpdates/GitHubVersionClient.php';
 $checks = 0;
 $failures = [];
 
@@ -46,10 +52,14 @@ $profile_renderer = $read( $root . '/src/Presentation/OrganizationProfileRendere
 $compatibility_adapter = $read( $root . '/src/Compatibility/SfpfOrganizationAdapter.php' );
 $core_integration = $read( $root . '/src/Core/CoreIntegration.php' );
 
-preg_match( '/^ \* Version:\s*([^\s]+)/m', $initialization, $header_match );
+// Bug: frozen release numbers failed the suite after routine releases.
+// Fix: read the real header and compare it to the runtime version.
+// Why this way: Core's header parser keeps the check aligned with the updater.
+// Test: the plugin-header and runtime-version assertions below.
+$header_version = GitHubVersionClient::extract_version( $initialization );
 preg_match( "/define\( 'SMC_VERSION', '([^']+)' \)/", $initialization, $constant_match );
-$expect( '3.2.0' === ( $header_match[1] ?? '' ), 'plugin header version is 3.2.0' );
-$expect( ( $header_match[1] ?? '' ) === ( $constant_match[1] ?? '' ), 'plugin header and runtime versions match' );
+$expect( false !== $header_version && 1 === preg_match( '/^\d+\.\d+\.\d+$/D', $header_version ), 'plugin header contains a release version' );
+$expect( false !== $header_version && $header_version === ( $constant_match[1] ?? '' ), 'plugin header and runtime versions match' );
 $expect( str_contains( $initialization, 'Plugin Name: SMC Organization Profile Integration' ), 'approved plugin name is used' );
 $expect( str_contains( $initialization, 'Text Domain: smc-organization-profile-integration' ), 'approved plugin slug is used' );
 $expect( str_contains( $initialization, 'namespace SMC\\OrganizationProfile;' ), 'approved root namespace is used' );
@@ -216,7 +226,8 @@ $expect(
     && str_contains( $plugin, 'FrontendAssets::register()' ),
     'shared frontend presentation preserves Organization-page loading without a blocking stylesheet request'
 );
-$expect( '3.22.0' === trim( $read( $root . '/lib/hexa-wordpress-plugin-core/VERSION' ) ), 'bundled Core is synchronized to canonical 3.22.0' );
+// Core 3.64.0 is the minimum bundle for the plugin's native Fields implementation.
+$expect( version_compare( CoreVersion::current( $core_root ), '3.64.0', '>=' ), 'bundled Core supports the native Fields implementation' );
 $expect( is_file( $root . '/docs/architecture.md' ) && is_file( $root . '/docs/schema-contract.md' ), 'architecture and schema contracts are documented' );
 
 // Architecture regressions: SMC owns Organization behavior; generic mechanics stay in Core.

@@ -26,7 +26,12 @@ $expect = static function ( bool $condition, string $message ) use ( &$checks, &
     echo "FAIL {$message}\n";
 };
 
-$expect( defined( 'SMC_VERSION' ) && '3.2.0' === SMC_VERSION, 'SMC 3.2.0 is active' );
+// Bug: the live check expected one old release regardless of the installed header.
+// Fix: compare the running constant with WordPress's reading of the installed plugin header.
+// Why this way: both sides of the comparison follow the installed release independently.
+// Test: the live Organization plugin version assertion below.
+$smc_header = get_file_data( __DIR__ . '/../initialization.php', [ 'version' => 'Version' ] );
+$expect( defined( 'SMC_VERSION' ) && '' !== $smc_header['version'] && $smc_header['version'] === SMC_VERSION, 'active Organization runtime matches the installed plugin header' );
 $expect( class_exists( SharedContentTypes::class ), 'HWS shared content registry is active' );
 $expect( version_compare( PluginMetadata::VERSION, '13.0.3', '>=' ), 'HWS stable ownership release is active' );
 $expect( post_type_exists( 'organization' ), 'Organization CPT exists' );

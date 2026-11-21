@@ -9,6 +9,8 @@ Canonical Organization fields, schema graphs, REST output, and presentation help
 
 ## Features
 
+- The version tests check the plugin header, runtime version and minimum Hexa WP Core release as versions advance.
+
 - The Organization dashboard reports the Core field engine and field structure.
 
 - Hexa WP Core 3.64.0 registers, edits and reads Organization fields using the existing values and keys.
@@ -34,7 +36,7 @@ Canonical Organization fields, schema graphs, REST output, and presentation help
 - Repository: `mikeyperes/smc-organization-profile-integration`
 - Plugin slug: `smc-organization-profile-integration`
 - Namespace: `SMC\OrganizationProfile`
-- Version: `3.1.0`
+- Version: `3.2.3`
 
 ## Ownership
 

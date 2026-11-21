@@ -4,13 +4,23 @@ declare( strict_types=1 );
 
 define( 'ABSPATH', __DIR__ . '/' );
 
-defined( 'SMC_VERSION' ) || define( 'SMC_VERSION', '3.2.0' );
 defined( 'SMC_PLUGIN_DIR' ) || define( 'SMC_PLUGIN_DIR', dirname( __DIR__ ) . '/' );
 
 $smc_test_core = dirname( __DIR__ ) . '/lib/hexa-wordpress-plugin-core';
 require_once $smc_test_core . '/bootstrap.php';
 HexaPluginCorePackageRegistry::register_candidate( 'smc-tests', $smc_test_core );
 HexaPluginCorePackageRegistry::resolve();
+
+// Bug: the standalone bootstrap used an obsolete release number.
+// Fix: parse the current WordPress plugin header using the Core updater parser.
+// Why this way: the fixture follows the shipped plugin without booting WordPress.
+// Test: schema-unit.php.
+$smc_test_plugin_header = file_get_contents( SMC_PLUGIN_DIR . 'initialization.php' );
+$smc_test_version = \Hexa\PluginCore\PluginUpdates\GitHubVersionClient::extract_version( (string) $smc_test_plugin_header );
+if ( false === $smc_test_version ) {
+    throw new RuntimeException( 'SMC plugin header has no version.' );
+}
+defined( 'SMC_VERSION' ) || define( 'SMC_VERSION', $smc_test_version );
 require_once $smc_test_core . '/tests/support/fields.php';
 
 final class WP_User {
