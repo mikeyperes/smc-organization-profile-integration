@@ -9,6 +9,8 @@ Canonical Organization fields, schema graphs, REST output, and presentation help
 
 ## Features
 
+- The plugin updater uses the shared Hexa WP Core 3.65.3 configuration with its existing settings.
+
 - Schema tests cover the founder’s public email and the user-backed Organization’s legal name through WordPress user metadata.
 
 - The version tests check the plugin header, runtime version and minimum Hexa WP Core release as versions advance.

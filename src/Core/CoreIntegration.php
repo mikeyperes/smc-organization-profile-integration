@@ -86,24 +86,16 @@ final class CoreIntegration {
             return self::$updater;
         }
 
-        self::$updater = UpdaterConfig::from_plugin_file(
+        self::$updater = UpdaterConfig::from_managed_plugin_file(
             SMC_PLUGIN_FILE,
             'mikeyperes/smc-organization-profile-integration',
+            'smc-organization-profile-integration',
+            'smc_core_updater',
             [
-                'plugin_slug'               => 'smc-organization-profile-integration',
-                'proper_folder_name'        => 'smc-organization-profile-integration',
-                'runtime_folder_name'       => dirname( SMC_PLUGIN_BASENAME ),
-                'plugin_basename'           => SMC_PLUGIN_BASENAME,
-                'canonical_plugin_basename' => 'smc-organization-profile-integration/initialization.php',
-                'plugin_starter_file'       => 'initialization.php',
-                'github_branch'             => 'main',
-                'requires'                  => '6.0',
-                'tested'                    => get_bloginfo( 'version' ),
-                'requires_php'              => '8.1',
-                'nonce_action'              => 'smc_core_updater',
-                'nonce_param'               => 'nonce',
-                'ajax_action_prefix'        => 'smc_core_updater',
-                'progress_key'              => 'smc_core_update_progress',
+                'requires'        => '6.0',
+                'tested'          => get_bloginfo( 'version' ),
+                'requires_php'    => '8.1',
+                'plugin_basename' => SMC_PLUGIN_BASENAME,
             ]
         );
 
