@@ -9,6 +9,8 @@ Canonical Organization fields, schema graphs, REST output, and presentation help
 
 ## Features
 
+- Schema tests cover the founder’s public email and the user-backed Organization’s legal name through WordPress user metadata.
+
 - The version tests check the plugin header, runtime version and minimum Hexa WP Core release as versions advance.
 
 - The Organization dashboard reports the Core field engine and field structure.
@@ -36,7 +38,7 @@ Canonical Organization fields, schema graphs, REST output, and presentation help
 - Repository: `mikeyperes/smc-organization-profile-integration`
 - Plugin slug: `smc-organization-profile-integration`
 - Namespace: `SMC\OrganizationProfile`
-- Version: `3.2.3`
+- Version: `3.2.4`
 
 ## Ownership
 

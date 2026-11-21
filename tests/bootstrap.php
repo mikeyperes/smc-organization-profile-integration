@@ -184,6 +184,26 @@ $GLOBALS['smc_test_meta'] = [
     104 => [ '_wp_attachment_image_alt' => 'Acme office' ],
 ];
 
+// Bug: Core's native field reader skipped the ACF stand-in for user-backed schema fields.
+// Fix: provide the Organization fields and founder's public email through WordPress user meta.
+// Why this way: the fixture uses Core's normal storage path and keeps the public email distinct from the account email.
+// Test: schema-unit.php.
+$GLOBALS['smc_test_user_meta'] = [
+    1 => [
+        'schema_enabled' => 1,
+        'organization_type' => 'Organization',
+        'legal_name' => 'Ada Founder Media LLC',
+        'short_description' => 'An author-led media organization.',
+        'company_description' => '<p>A canonical user-backed Organization.</p>',
+        'url' => 'https://company.test/',
+        'founding_date' => '2021-06-10',
+        'identity_links' => [ [ 'platform' => 'linkedin', 'url' => 'https://www.linkedin.com/in/ada/' ] ],
+        'logo' => 101,
+        'urls' => [ 'linkedin' => 'https://www.linkedin.com/in/ada/' ],
+        'additional' => [ 'public_email' => 'ada-public@acme.example' ],
+    ],
+];
+
 function absint( mixed $value ): int {
     return abs( (int) $value );
 }
@@ -257,26 +277,6 @@ function get_post_meta( int $post_id, string $key, bool $single = false ): mixed
 function get_user_meta( int $user_id, string $key, bool $single = false ): mixed {
     unset( $single );
     return $GLOBALS['smc_test_user_meta'][ $user_id ][ $key ] ?? '';
-}
-
-function get_field( string $key, int|string $context ): mixed {
-    if ( is_string( $context ) && str_starts_with( $context, 'user_' ) ) {
-        return match ( $key ) {
-            'schema_enabled' => 1,
-            'organization_type' => 'Organization',
-            'legal_name' => 'Ada Founder Media LLC',
-            'short_description' => 'An author-led media organization.',
-            'company_description' => '<p>A canonical user-backed Organization.</p>',
-            'url' => 'https://company.test/',
-            'founding_date' => '2021-06-10',
-            'identity_links' => [ [ 'platform' => 'linkedin', 'url' => 'https://www.linkedin.com/in/ada/' ] ],
-            'logo' => 101,
-            'urls' => [ 'linkedin' => 'https://www.linkedin.com/in/ada/' ],
-            'additional' => [ 'public_email' => 'ada-public@acme.example' ],
-            default => null,
-        };
-    }
-    return $GLOBALS['smc_test_meta'][ (int) $context ][ $key ] ?? null;
 }
 
 function shortcode_atts( array $defaults, array $attributes, string $shortcode = '' ): array {

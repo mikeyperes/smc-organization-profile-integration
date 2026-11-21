@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.2.4
+
+- Updated the schema test fixtures to use native WordPress user metadata for the founder’s public email and the user-backed Organization’s legal name.
+
 ## 3.1.0
 
 - ACF Pro is no longer required: the Organization field model, its migrator hook and diagnostics run on Hexa WP Core 3.4.5 `Fields` (ACF when active, native storage otherwise). The ACF Pro activation check, admin notice and required-plugin entry are removed.
